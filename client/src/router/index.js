@@ -24,9 +24,11 @@ function homeFor(auth) {
 
 router.beforeEach(async (to) => {
   const auth = useAuthStore();
-  if (!auth.initialized) {
+
+  if (to.meta.requiresAuth && !auth.initialized) {
     await auth.fetchMe();
   }
+
   if (to.meta.requiresAuth && !auth.isAuthenticated) {
     return { name: 'login', query: { redirect: to.fullPath } };
   }

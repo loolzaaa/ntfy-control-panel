@@ -21,6 +21,7 @@ export const useAuthStore = defineStore('auth', {
         const { data } = await client.post('/auth/login', { username, password });
         setCsrfToken(data.csrfToken);
         this.user = data.user;
+        this.initialized = true;
       } finally {
         this.loading = false;
       }
