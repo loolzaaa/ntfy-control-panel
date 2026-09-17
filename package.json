@@ -2,7 +2,7 @@
   "name": "ntfy-control-panel",
   "version": "1.0.0",
   "private": true,
-  "description": "ntfy web administration panel (manage users, tokens, and access permissions)",
+  "description": "ntfy control panel (manage users, tokens, and access permissions)",
   "license": "MIT",
   "type": "commonjs",
   "main": "server/src/index.js",

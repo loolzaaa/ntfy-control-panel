@@ -23,7 +23,7 @@ async function logout() {
 <template>
   <header class="app-header">
     <div class="app-header__inner">
-      <div class="app-header__brand"><span class="dot"></span> ntfy Admin</div>
+      <div class="app-header__brand"><span class="dot"></span> ntfy Control Panel</div>
       <nav v-if="auth.isAdmin" class="app-nav">
         <router-link :to="{ name: 'users' }">{{ t('nav.users') }}</router-link>
         <router-link :to="{ name: 'audit' }">{{ t('nav.audit') }}</router-link>

@@ -1,7 +1,7 @@
 export default {
   app: {
-    title: 'ntfy Admin Panel',
-    description: 'Web admin panel for ntfy',
+    title: 'ntfy Control Panel',
+    description: 'Web control panel for ntfy',
   },
   nav: {
     users: 'Users',
@@ -32,7 +32,7 @@ export default {
     busy: 'Working…',
   },
   login: {
-    heading: 'ntfy Admin Panel',
+    heading: 'ntfy Control Panel',
     subtitle: 'Sign in to manage users, tokens and access rights',
     username: 'Username',
     password: 'Password',

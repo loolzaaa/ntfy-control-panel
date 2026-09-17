@@ -1,4 +1,4 @@
-# ntfy Admin Panel
+# ntfy Control Panel
 
 A web application for centralized management of users, tokens and topic access
 rights on a **ntfy** (self-hosted) push notification server.

@@ -35,7 +35,7 @@ function start() {
 
   const app = createApp();
   const server = app.listen(config.port, config.host, () => {
-    console.log(`ntfy admin panel started: http://${config.host}:${config.port}`);
+    console.log(`ntfy control panel started: http://${config.host}:${config.port}`);
     console.log(`Active authentication providers: ${config.auth.providers.join(', ')}`);
 
     if (config.session.secretWasGenerated) {

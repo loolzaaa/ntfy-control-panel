@@ -4,7 +4,7 @@
 
 ## 1. Purpose
 
-The ntfy admin panel lets you manage ntfy user accounts, their access tokens and
+The ntfy control panel lets you manage ntfy user accounts, their access tokens and
 topic permissions. All changes are applied directly to the ntfy server through
 its CLI.
 

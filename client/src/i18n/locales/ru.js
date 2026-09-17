@@ -1,7 +1,7 @@
 export default {
   app: {
-    title: 'Панель администрирования ntfy',
-    description: 'Веб-панель администрирования ntfy',
+    title: 'Панель управления ntfy',
+    description: 'Веб-панель управления ntfy',
   },
   nav: {
     users: 'Пользователи',
@@ -32,7 +32,7 @@ export default {
     busy: 'Выполняется…',
   },
   login: {
-    heading: 'Панель администрирования ntfy',
+    heading: 'Панель управления ntfy',
     subtitle: 'Войдите, чтобы управлять пользователями, токенами и правами доступа',
     username: 'Логин',
     password: 'Пароль',

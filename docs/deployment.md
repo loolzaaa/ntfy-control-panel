@@ -1,6 +1,6 @@
 # Deployment Guide
 
-This document describes a complete installation of the ntfy admin panel on a
+This document describes a complete installation of the ntfy control panel on a
 **Linux** server without using containers, in strict order:
 
 1. system packages and Node.js;
@@ -19,7 +19,7 @@ Two different service users are used and must not be confused:
 | Service | System user | Data |
 |---------|-------------|------|
 | ntfy server | `ntfy` | `/etc/ntfy` (config), `/var/lib/ntfy` (user DB), `/var/cache/ntfy` (message cache, attachments) |
-| ntfy admin panel | `ntfy-panel` | `/opt/ntfy-control-panel` (code), `/var/lib/ntfy-panel` (panel DB) |
+| ntfy control panel | `ntfy-panel` | `/opt/ntfy-control-panel` (code), `/var/lib/ntfy-panel` (panel DB) |
 
 ## 1. Requirements
 
@@ -360,7 +360,7 @@ Create `/etc/systemd/system/ntfy-panel.service`:
 
 ```ini
 [Unit]
-Description=ntfy Admin Panel
+Description=ntfy Control Panel
 After=network.target ntfy.service
 Wants=ntfy.service
 
