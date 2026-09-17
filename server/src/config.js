@@ -7,6 +7,8 @@ require('dotenv').config();
 
 const rootDir = path.resolve(__dirname, '..', '..');
 
+const KNOWN_PROVIDERS = ['local', 'ldap'];
+
 function toBool(value, defaultValue) {
   if (value === undefined || value === null || value === '') {
     return defaultValue;
@@ -17,6 +19,27 @@ function toBool(value, defaultValue) {
 function toInt(value, defaultValue) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : defaultValue;
+}
+
+function parseProviderList(value) {
+  if (!value || !String(value).trim()) {
+    return ['local'];
+  }
+  const seen = new Set();
+  const providers = [];
+  for (const raw of String(value).split(',')) {
+    const name = raw.trim().toLowerCase();
+    if (!name || seen.has(name)) {
+      continue;
+    }
+    if (!KNOWN_PROVIDERS.includes(name)) {
+      console.warn(`[config] Unknown auth provider "${name}" in AUTH_PROVIDERS; ignoring.`);
+      continue;
+    }
+    seen.add(name);
+    providers.push(name);
+  }
+  return providers.length ? providers : ['local'];
 }
 
 function resolveSessionSecret() {
@@ -54,6 +77,24 @@ const config = {
     baseUrl: process.env.NTFY_BASE_URL || '',
     timeoutMs: toInt(process.env.NTFY_TIMEOUT_MS, 15000),
     maxBufferBytes: toInt(process.env.NTFY_MAX_BUFFER_BYTES, 10 * 1024 * 1024),
+  },
+  auth: {
+    providers: parseProviderList(process.env.AUTH_PROVIDERS),
+    ldap: {
+      url: process.env.LDAP_URL || '',
+      bindDn: process.env.LDAP_BIND_DN || '',
+      bindPassword: process.env.LDAP_BIND_PASSWORD || '',
+      searchBase: process.env.LDAP_SEARCH_BASE || '',
+      searchFilter: process.env.LDAP_SEARCH_FILTER || '(uid={{username}})',
+      attrUsername: process.env.LDAP_ATTR_USERNAME || 'uid',
+      attrDisplayName: process.env.LDAP_ATTR_DISPLAY_NAME || 'cn',
+      attrEmail: process.env.LDAP_ATTR_EMAIL || 'mail',
+      startTls: toBool(process.env.LDAP_STARTTLS, false),
+      tlsRejectUnauthorized: toBool(process.env.LDAP_TLS_REJECT_UNAUTHORIZED, true),
+      connectTimeoutMs: toInt(process.env.LDAP_CONNECT_TIMEOUT_MS, 5000),
+      provisionNtfyUser: toBool(process.env.LDAP_PROVISION_NTFY_USER, false),
+      role: process.env.LDAP_ROLE || 'user',
+    },
   },
   bootstrap: {
     username: (process.env.BOOTSTRAP_ADMIN_USERNAME || 'admin').trim(),

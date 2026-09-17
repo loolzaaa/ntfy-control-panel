@@ -26,7 +26,7 @@ Two different service users are used and must not be confused:
 | Component | Requirement |
 |-----------|------------|
 | OS | Linux (the only supported operating system) |
-| Node.js | 18 and above (20/22 LTS recommended) |
+| Node.js | 22 and above (22/24 LTS recommended; required by `ldapts`) |
 | ntfy | version 2.x (tested with CLI 2.x, stated for 2.28.0) |
 | Port | free TCP port (default 8080 for the panel; 2586 for ntfy) |
 
@@ -287,6 +287,8 @@ PANEL_DB=/var/lib/ntfy-panel/panel.db
 BOOTSTRAP_ADMIN_USERNAME=admin
 BOOTSTRAP_ADMIN_PASSWORD=<strong password>
 
+AUTH_PROVIDERS=local
+
 NTFY_BIN=/usr/bin/ntfy
 NTFY_AUTH_FILE=/var/lib/ntfy/user.db
 ```
@@ -312,6 +314,42 @@ On first launch, when the panel administrator table is empty:
 
 After the first login, change the password (the "Change password" button in the
 header).
+
+### Authentication providers (local / LDAP)
+
+Identity providers are tried in the order listed in `AUTH_PROVIDERS`. To enable
+LDAP together with local accounts:
+
+```dotenv
+AUTH_PROVIDERS=local,ldap
+LDAP_URL=ldaps://ldap.example.com:636
+LDAP_BIND_DN=cn=svc,ou=services,dc=example,dc=com
+LDAP_BIND_PASSWORD=<service account password>
+LDAP_SEARCH_BASE=ou=people,dc=example,dc=com
+LDAP_SEARCH_FILTER=(uid={{username}})
+LDAP_ATTR_USERNAME=uid
+LDAP_ATTR_DISPLAY_NAME=cn
+LDAP_ATTR_EMAIL=mail
+LDAP_PROVISION_NTFY_USER=true
+LDAP_ROLE=user
+```
+
+- LDAP users are stored in the panel database with the role `user`; only local
+  accounts can be administrators.
+- With `LDAP_PROVISION_NTFY_USER=true`, the ntfy user is created automatically on
+  the first LDAP login (with a random password and no tokens).
+- Use `LDAP_STARTTLS=true` for StartTLS instead of `ldaps://`; set
+  `LDAP_TLS_REJECT_UNAUTHORIZED=false` only for self-signed certificates.
+- The panel does not need access to `/etc/ntfy/server.yml`; it uses
+  `NTFY_AUTH_FILE` directly.
+- If LDAP is enabled but `LDAP_URL`, `LDAP_BIND_DN` or `LDAP_SEARCH_BASE` is
+  missing, the provider is skipped and an error is written to the log.
+
+Restart the panel after changing authentication settings:
+
+```bash
+sudo systemctl restart ntfy-panel
+```
 
 ## 8. Create the panel systemd service
 

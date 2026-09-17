@@ -3,8 +3,9 @@
 const express = require('express');
 const { rateLimit } = require('express-rate-limit');
 const config = require('../config');
-const admins = require('../services/admins');
+const users = require('../services/users');
 const audit = require('../services/audit');
+const { authenticate } = require('../auth/authenticate');
 const { validate, loginSchema, changePasswordSchema } = require('../utils/validate');
 const { ensureCsrfToken, csrfProtection } = require('../middleware/csrf');
 const { requireAuth } = require('../middleware/auth');
@@ -44,43 +45,37 @@ function destroySession(req) {
   });
 }
 
+function serializeUser(user) {
+  return { username: user.username, role: user.role, source: user.source };
+}
+
 router.post('/login', loginLimiter, async (req, res) => {
   const { username, password } = validate(loginSchema, req.body);
-  const admin = admins.findByUsername(username);
+  const result = await authenticate({ username, password, ip: req.ip });
 
-  if (!admins.verifyPassword(admin, password)) {
-    audit.log({
-      adminId: admin ? admin.id : null,
-      adminUsername: username,
-      action: 'auth.login_failed',
-      details: { ip: req.ip },
-    });
+  if (!result) {
     throw new AppError('Invalid username or password', {
       status: 401,
       code: 'invalid_credentials',
     });
   }
 
+  const { user } = result;
+
   await regenerateSession(req);
-  req.session.adminId = admin.id;
-  req.session.username = admin.username;
+  req.session.userId = user.id;
+  req.session.username = user.username;
+  req.session.role = user.role;
   const csrfToken = ensureCsrfToken(req);
   await saveSession(req);
 
-  audit.log({
-    adminId: admin.id,
-    adminUsername: admin.username,
-    action: 'auth.login',
-    details: { ip: req.ip },
-  });
-
-  res.json({ admin: { username: admin.username }, csrfToken });
+  res.json({ user: serializeUser(user), csrfToken });
 });
 
 router.post('/logout', requireAuth, csrfProtection, async (req, res) => {
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'auth.logout',
   });
   await destroySession(req);
@@ -89,26 +84,33 @@ router.post('/logout', requireAuth, csrfProtection, async (req, res) => {
 
 router.get('/me', requireAuth, (req, res) => {
   res.json({
-    admin: { username: req.admin.username },
+    user: serializeUser(req.user),
     csrfToken: ensureCsrfToken(req),
   });
 });
 
 router.post('/change-password', requireAuth, csrfProtection, async (req, res) => {
   const { currentPassword, newPassword } = validate(changePasswordSchema, req.body);
-  const admin = admins.findByUsername(req.admin.username);
+  const user = users.findByUsername(req.user.username);
 
-  if (!admins.verifyPassword(admin, currentPassword)) {
+  if (!user || user.source !== 'local') {
+    throw new AppError('The password is managed externally and cannot be changed here', {
+      status: 400,
+      code: 'password_managed_externally',
+    });
+  }
+
+  if (!users.verifyPassword(user, currentPassword)) {
     throw new AppError('The current password is incorrect', {
       status: 400,
       code: 'invalid_password',
     });
   }
 
-  admins.changePassword(admin.id, newPassword);
+  users.changePassword(user.id, newPassword);
   audit.log({
-    adminId: admin.id,
-    adminUsername: admin.username,
+    adminId: user.id,
+    adminUsername: user.username,
     action: 'auth.change_password',
   });
   res.json({ ok: true });

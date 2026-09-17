@@ -13,7 +13,11 @@ the panel keeps only the panel administrator accounts and the audit log.
 
 ## Features
 
-- Authentication of panel administrators (local accounts, bcrypt).
+- Authentication with pluggable identity providers: local panel accounts
+  (bcrypt) and/or LDAP, tried in the configured order.
+- Two panel roles: administrator (full management) and user (stub area for now).
+- Optional automatic creation of the ntfy user on the first LDAP login
+  (random password, no tokens).
 - List of ntfy users with search by name.
 - Creating a user (the password is generated automatically) with optional
   creation of a personal token.
@@ -33,6 +37,7 @@ the panel keeps only the panel administrator accounts and the audit log.
 | Backend   | Node.js, Express 5 |
 | Frontend  | Vue 3, Vite, Pinia, Vue Router |
 | Panel DB | SQLite (better-sqlite3) |
+| Authentication | Local accounts (bcrypt) and/or LDAP (`ldapts`) |
 | Integration | ntfy CLI via `child_process.execFile` |
 
 ## Project structure
@@ -112,6 +117,8 @@ See [.env.example](.env.example). Key ones:
 | Variable | Purpose |
 |------------|------------|
 | `SESSION_SECRET` | session cookie secret (required in production) |
+| `AUTH_PROVIDERS` | ordered list of active providers (`local`, `ldap`) |
+| `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_SEARCH_BASE`, ... | LDAP provider settings |
 | `PANEL_DB` | path to the panel SQLite database |
 | `NTFY_BIN` | path to the ntfy executable |
 | `NTFY_CONFIG_FILE` | path to the ntfy `server.yml` |

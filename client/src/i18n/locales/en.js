@@ -193,6 +193,10 @@ export default {
     back: 'Previous',
     next: 'Next',
   },
+  comingSoon: {
+    title: 'Data will be available later',
+    message: 'The user area is under development. Functionality will be added later.',
+  },
   errors: {
     generic: 'Something went wrong',
     network_error: 'Could not complete the request. Check the connection to the server.',

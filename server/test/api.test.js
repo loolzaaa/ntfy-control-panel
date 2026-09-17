@@ -169,11 +169,11 @@ childProcess.execFile = (bin, args, options, callback) => {
 
 // --- Application startup -----------------------------------------------------
 const { initDb, closeDb } = require('../src/db');
-const admins = require('../src/services/admins');
+const users = require('../src/services/users');
 const { createApp } = require('../src/app');
 
 initDb(dbPath);
-admins.createAdmin('admin', 'secret12345');
+users.createLocalUser('admin', 'secret12345', 'admin');
 const app = createApp();
 
 let server;
@@ -229,6 +229,7 @@ test.after(() => {
 test('full user lifecycle over the HTTP API', async () => {
   const login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
   assert.equal(login.status, 200);
+  assert.equal(login.data.user.role, 'admin');
   const csrf = login.data.csrfToken;
   assert.ok(csrf);
 
@@ -316,6 +317,25 @@ test('CSRF protection: mutation without token is rejected', async () => {
   const result = await api('POST', '/api/users', { username: 'bob' });
   assert.equal(result.status, 403);
   assert.equal(result.data.error.code, 'forbidden');
+});
+
+test('regular users cannot access admin endpoints', async () => {
+  users.createLocalUser('viewer', 'viewerpass', 'user');
+
+  const login = await api('POST', '/api/auth/login', { username: 'viewer', password: 'viewerpass' });
+  assert.equal(login.status, 200);
+  assert.equal(login.data.user.role, 'user');
+
+  const me = await api('GET', '/api/auth/me');
+  assert.equal(me.status, 200);
+  assert.equal(me.data.user.role, 'user');
+
+  const usersList = await api('GET', '/api/users');
+  assert.equal(usersList.status, 403);
+  assert.equal(usersList.data.error.code, 'forbidden');
+
+  const auditList = await api('GET', '/api/audit');
+  assert.equal(auditList.status, 403);
 });
 
 test('SPA is served as static files, unknown API route returns 404 JSON', async () => {

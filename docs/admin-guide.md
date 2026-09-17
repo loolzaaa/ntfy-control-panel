@@ -8,29 +8,40 @@ The ntfy admin panel lets you manage ntfy user accounts, their access tokens and
 topic permissions. All changes are applied directly to the ntfy server through
 its CLI.
 
-The panel is intended for administrators only: there are no other roles in it.
+The panel has two roles:
+
+- **Administrator** — full access: users, tokens, topic permissions and the audit log.
+- **User** — a personal area only. At the moment it shows a "Data will be available
+  later" placeholder; administrative functionality is not available to it.
+
+Administrators are local panel accounts. Users authenticate through an external
+identity provider (LDAP) and receive the `user` role automatically.
 
 ## 2. Logging into the panel
 
 1. Open the panel address in your browser (for example, `https://ntfy-admin.example.com`).
-2. Enter the panel administrator login and password.
+2. Enter your login and password (a local panel account or an LDAP account).
 3. Click "Sign in".
 
 The session lasts for a limited time (8 hours by default). After several failed
 attempts, login is temporarily blocked.
 
-The initial login and password are set during deployment (see the deployment
-guide). Change the password immediately after the first login.
+The initial administrator login and password are set during deployment (see the
+deployment guide). Change the password immediately after the first login. LDAP
+users cannot change their password in the panel — it is managed by the directory.
 
 ## 3. Navigation
 
-The following sections are located at the top of the screen:
+Administrators see the following sections at the top of the screen:
 
 - **Users** — the main management section.
 - **Audit log** — the history of administrator actions.
 
-On the right side of the header are the administrator name and the "Change
-password" and "Log out" buttons.
+On the right side of the header are the user name, the language switcher and the
+"Log out" button; administrators additionally see "Change password".
+
+Users with the `user` role do not see the administrative sections: they only get
+the "Data will be available later" placeholder page.
 
 ## 4. User list
 
@@ -178,9 +189,18 @@ related to ntfy user passwords.
 - The panel does not store ntfy user passwords: on creation the password is
   generated and is not shown.
 
-## 10. Authentication of panel administrators
+## 10. Authentication of panel users
 
-A basic scheme is implemented — local panel administrator accounts with password
-hashing (bcrypt). LDAP integration is classified as an optional requirement and
-can be added as a separate authentication provider without changing the rest of
-the panel's logic.
+Authentication is performed by identity providers that are enabled and ordered
+through the `AUTH_PROVIDERS` setting (for example `local,ldap`). Providers are
+tried in the configured order:
+
+- **local** — accounts stored in the panel database (bcrypt hashes). These are
+  administrators.
+- **ldap** — binds against an LDAP directory. LDAP users receive the `user` role.
+
+On the first successful LDAP login, the ntfy user can be created automatically
+(with a random password and no access tokens) if `LDAP_PROVISION_NTFY_USER=true`.
+
+LDAP users cannot change their password in the panel; it is managed by the
+directory.

@@ -7,11 +7,14 @@ const Database = require('better-sqlite3');
 let db = null;
 
 const SCHEMA = `
-CREATE TABLE IF NOT EXISTS admins (
+CREATE TABLE IF NOT EXISTS users (
   id            INTEGER PRIMARY KEY AUTOINCREMENT,
   username      TEXT NOT NULL UNIQUE,
-  password_hash TEXT NOT NULL,
-  created_at    TEXT NOT NULL DEFAULT (datetime('now'))
+  password_hash TEXT,
+  role          TEXT NOT NULL DEFAULT 'user',
+  source        TEXT NOT NULL DEFAULT 'local',
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  last_login_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS audit_log (
@@ -21,14 +24,8 @@ CREATE TABLE IF NOT EXISTS audit_log (
   action         TEXT NOT NULL,
   target_user    TEXT,
   details        TEXT,
-  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
-  FOREIGN KEY (admin_id) REFERENCES admins(id) ON DELETE SET NULL
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
 );
-
-CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log (created_at);
-CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_log (admin_username);
-CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log (action);
-CREATE INDEX IF NOT EXISTS idx_audit_target ON audit_log (target_user);
 
 CREATE TABLE IF NOT EXISTS sessions (
   sid     TEXT PRIMARY KEY,
@@ -36,6 +33,10 @@ CREATE TABLE IF NOT EXISTS sessions (
   data    TEXT NOT NULL
 );
 
+CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_log (created_at);
+CREATE INDEX IF NOT EXISTS idx_audit_admin ON audit_log (admin_username);
+CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_log (action);
+CREATE INDEX IF NOT EXISTS idx_audit_target ON audit_log (target_user);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions (expires);
 `;
 

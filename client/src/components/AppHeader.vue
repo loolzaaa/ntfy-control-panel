@@ -24,14 +24,19 @@ async function logout() {
   <header class="app-header">
     <div class="app-header__inner">
       <div class="app-header__brand"><span class="dot"></span> ntfy Admin</div>
-      <nav class="app-nav">
+      <nav v-if="auth.isAdmin" class="app-nav">
         <router-link :to="{ name: 'users' }">{{ t('nav.users') }}</router-link>
         <router-link :to="{ name: 'audit' }">{{ t('nav.audit') }}</router-link>
       </nav>
-      <div class="app-header__user">
+      <div class="app-header__user" :class="{ 'app-header__user--push': !auth.isAdmin }">
         <span class="hide-sm">{{ auth.username }}</span>
         <LanguageSwitcher />
-        <button class="btn btn--secondary btn--sm" type="button" @click="showPassword = true">
+        <button
+          v-if="auth.isLocal"
+          class="btn btn--secondary btn--sm"
+          type="button"
+          @click="showPassword = true"
+        >
           {{ t('header.changePassword') }}
         </button>
         <button class="btn btn--ghost btn--sm" type="button" @click="logout">

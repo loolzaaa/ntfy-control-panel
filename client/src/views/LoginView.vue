@@ -28,7 +28,7 @@ async function submit() {
     await auth.login(username.value.trim(), password.value);
     toast.success(t('login.success'));
     const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : null;
-    router.push(redirect || { name: 'users' });
+    router.push(redirect || (auth.isAdmin ? { name: 'users' } : { name: 'profile' }));
   } catch (err) {
     apiError.value = err;
   } finally {

@@ -47,8 +47,8 @@ router.post('/', async (req, res) => {
   });
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'user.create',
     targetUser: data.username,
     details: {
@@ -78,8 +78,8 @@ router.delete('/:username', async (req, res) => {
   await ntfy.deleteUser(username);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'user.delete',
     targetUser: username,
   });
@@ -95,8 +95,8 @@ router.post('/:username/tokens', async (req, res) => {
   const token = await ntfy.addToken(username, data.label || undefined, data.expires || undefined);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'token.create',
     targetUser: username,
     details: { label: token.label || null, token: maskToken(token.value) },
@@ -112,8 +112,8 @@ router.delete('/:username/tokens/:token', async (req, res) => {
   await ntfy.deleteToken(username, token);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'token.delete',
     targetUser: username,
     details: { token: maskToken(token) },
@@ -129,8 +129,8 @@ router.delete('/:username/tokens', async (req, res) => {
   const count = await ntfy.deleteAllTokens(username);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'token.delete_all',
     targetUser: username,
     details: { count },
@@ -147,8 +147,8 @@ router.put('/:username/access', async (req, res) => {
   await ntfy.setAccess(username, data.topic, data.permission);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'access.set',
     targetUser: username,
     details: { topic: data.topic, permission: data.permission },
@@ -170,8 +170,8 @@ router.delete('/:username/access', async (req, res) => {
   await ntfy.deleteAccess(username, topic);
 
   audit.log({
-    adminId: req.admin.id,
-    adminUsername: req.admin.username,
+    adminId: req.user.id,
+    adminUsername: req.user.username,
     action: 'access.delete',
     targetUser: username,
     details: { topic },

@@ -3,11 +3,11 @@
 const crypto = require('node:crypto');
 const config = require('./config');
 const { initDb, closeDb } = require('./db');
-const admins = require('./services/admins');
+const users = require('./services/users');
 const { createApp } = require('./app');
 
 function ensureBootstrapAdmin() {
-  if (admins.countAdmins() > 0) {
+  if (users.countUsers() > 0) {
     return;
   }
 
@@ -15,7 +15,7 @@ function ensureBootstrapAdmin() {
   const generated = !password;
   const finalPassword = password || crypto.randomBytes(12).toString('base64url');
 
-  admins.createAdmin(username, finalPassword);
+  users.createLocalUser(username, finalPassword, 'admin');
 
   if (generated) {
     console.log('='.repeat(64));
@@ -36,6 +36,7 @@ function start() {
   const app = createApp();
   const server = app.listen(config.port, config.host, () => {
     console.log(`ntfy admin panel started: http://${config.host}:${config.port}`);
+    console.log(`Active authentication providers: ${config.auth.providers.join(', ')}`);
 
     if (config.session.secretWasGenerated) {
       console.warn(

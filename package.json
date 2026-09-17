@@ -7,7 +7,7 @@
   "type": "commonjs",
   "main": "server/src/index.js",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
     "start": "node server/src/index.js",
@@ -26,6 +26,7 @@
     "express-rate-limit": "^8.7.0",
     "express-session": "^1.19.0",
     "helmet": "^8.3.0",
+    "ldapts": "^9.2.0",
     "zod": "^4.6.5"
   }
 }

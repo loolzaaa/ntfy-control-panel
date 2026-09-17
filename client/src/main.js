@@ -18,7 +18,7 @@ applyDocumentLocale();
 
 setUnauthorizedHandler(() => {
   const auth = useAuthStore(pinia);
-  auth.admin = null;
+  auth.user = null;
   const current = router.currentRoute.value;
   if (current.meta && current.meta.requiresAuth) {
     router.push({ name: 'login', query: { redirect: current.fullPath } });

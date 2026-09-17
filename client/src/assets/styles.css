@@ -174,6 +174,10 @@ a {
   font-size: 14px;
 }
 
+.app-header__user--push {
+  margin-left: auto;
+}
+
 .content {
   flex: 1;
   width: 100%;

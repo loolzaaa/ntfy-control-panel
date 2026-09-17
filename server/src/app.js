@@ -8,7 +8,7 @@ const helmet = require('helmet');
 const config = require('./config');
 const { getDb } = require('./db');
 const SqliteSessionStore = require('./sessionStore');
-const { requireAuth } = require('./middleware/auth');
+const { requireAuth, requireAdmin } = require('./middleware/auth');
 const { csrfProtection } = require('./middleware/csrf');
 const { errorHandler, apiNotFoundHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
@@ -63,8 +63,8 @@ function createApp() {
   });
 
   app.use('/api/auth', authRoutes);
-  app.use('/api/users', requireAuth, csrfProtection, userRoutes);
-  app.use('/api/audit', requireAuth, csrfProtection, auditRoutes);
+  app.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
+  app.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
 
   app.use(apiNotFoundHandler);
 
