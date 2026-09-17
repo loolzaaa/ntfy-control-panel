@@ -338,6 +338,124 @@ test('regular users cannot access admin endpoints', async () => {
   assert.equal(auditList.status, 403);
 });
 
+test('self-service tokens respect the configured limit', async () => {
+  let login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  let csrf = login.data.csrfToken;
+
+  const created = await api(
+    'POST',
+    '/api/users',
+    { username: 'viewer', role: 'user', createToken: false },
+    { 'x-csrf-token': csrf }
+  );
+  assert.equal(created.status, 201);
+
+  login = await api('POST', '/api/auth/login', { username: 'viewer', password: 'viewerpass' });
+  csrf = login.data.csrfToken;
+  const headers = { 'x-csrf-token': csrf };
+
+  const initial = await api('GET', '/api/me/tokens');
+  assert.equal(initial.status, 200);
+  assert.equal(initial.data.tokens.length, 0);
+  assert.equal(initial.data.maxTokens, 4);
+  assert.equal(initial.data.ntfyUserExists, true);
+
+  for (let index = 0; index < 4; index += 1) {
+    const token = await api('POST', '/api/me/tokens', { label: `t${index}` }, headers);
+    assert.equal(token.status, 201);
+    assert.match(token.data.token.value, /^tk_/);
+  }
+
+  const over = await api('POST', '/api/me/tokens', { label: 'overflow' }, headers);
+  assert.equal(over.status, 409);
+  assert.equal(over.data.error.code, 'token_limit_reached');
+
+  const full = await api('GET', '/api/me/tokens');
+  assert.equal(full.data.tokens.length, 4);
+
+  const removed = await api(
+    'DELETE',
+    `/api/me/tokens/${encodeURIComponent(full.data.tokens[0].value)}`,
+    undefined,
+    headers
+  );
+  assert.equal(removed.status, 200);
+
+  const afterDelete = await api('POST', '/api/me/tokens', { label: 'after' }, headers);
+  assert.equal(afterDelete.status, 201);
+
+  login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  csrf = login.data.csrfToken;
+  const adminOver = await api(
+    'POST',
+    '/api/users/viewer/tokens',
+    { label: 'admin' },
+    { 'x-csrf-token': csrf }
+  );
+  assert.equal(adminOver.status, 409);
+  assert.equal(adminOver.data.error.code, 'token_limit_reached');
+});
+
+test('tokens created outside the panel are shown, cannot be added to, and can be deleted', async () => {
+  // Simulate a token created directly via the ntfy CLI, above the limit.
+  const cliToken = makeToken();
+  const viewerTokens = state.tokens.get('viewer') || [];
+  viewerTokens.push({ value: cliToken, label: 'created-via-cli' });
+  state.tokens.set('viewer', viewerTokens);
+
+  // The administrator sees all tokens (even above the limit) and cannot add more.
+  let login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  const adminDetail = await api('GET', '/api/users/viewer');
+  assert.equal(adminDetail.status, 200);
+  assert.equal(adminDetail.data.tokens.length, 5);
+  assert.equal(adminDetail.data.maxTokens, 4);
+  const adminBlocked = await api(
+    'POST',
+    '/api/users/viewer/tokens',
+    { label: 'x' },
+    { 'x-csrf-token': login.data.csrfToken }
+  );
+  assert.equal(adminBlocked.status, 409);
+  assert.equal(adminBlocked.data.error.code, 'token_limit_reached');
+
+  // The user sees all tokens, cannot add, but can delete.
+  login = await api('POST', '/api/auth/login', { username: 'viewer', password: 'viewerpass' });
+  const headers = { 'x-csrf-token': login.data.csrfToken };
+
+  const over = await api('GET', '/api/me/tokens');
+  assert.equal(over.status, 200);
+  assert.equal(over.data.tokens.length, 5);
+  assert.equal(over.data.maxTokens, 4);
+
+  const blocked = await api('POST', '/api/me/tokens', { label: 'nope' }, headers);
+  assert.equal(blocked.status, 409);
+
+  const removeFirst = await api(
+    'DELETE',
+    `/api/me/tokens/${encodeURIComponent(over.data.tokens[0].value)}`,
+    undefined,
+    headers
+  );
+  assert.equal(removeFirst.status, 200);
+
+  const atLimit = await api('GET', '/api/me/tokens');
+  assert.equal(atLimit.data.tokens.length, 4);
+
+  const stillBlocked = await api('POST', '/api/me/tokens', { label: 'nope' }, headers);
+  assert.equal(stillBlocked.status, 409);
+
+  const removeSecond = await api(
+    'DELETE',
+    `/api/me/tokens/${encodeURIComponent(atLimit.data.tokens[0].value)}`,
+    undefined,
+    headers
+  );
+  assert.equal(removeSecond.status, 200);
+
+  const allowed = await api('POST', '/api/me/tokens', { label: 'ok' }, headers);
+  assert.equal(allowed.status, 201);
+});
+
 test('SPA is served as static files, unknown API route returns 404 JSON', async () => {
   const index = await api('GET', '/');
   assert.equal(index.status, 200);

@@ -289,6 +289,9 @@ BOOTSTRAP_ADMIN_PASSWORD=<strong password>
 
 AUTH_PROVIDERS=local
 
+# Maximum number of access tokens per ntfy user (default 4)
+MAX_TOKENS_PER_USER=4
+
 NTFY_BIN=/usr/bin/ntfy
 NTFY_AUTH_FILE=/var/lib/ntfy/user.db
 ```

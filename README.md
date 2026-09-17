@@ -15,7 +15,11 @@ the panel keeps only the panel administrator accounts and the audit log.
 
 - Authentication with pluggable identity providers: local panel accounts
   (bcrypt) and/or LDAP, tried in the configured order.
-- Two panel roles: administrator (full management) and user (stub area for now).
+- Two panel roles: administrator (full management) and user (self-service for
+  own tokens).
+- Configurable per-user token limit (default 4), enforced both for administrators
+  and for users managing their own tokens.
+- QR code for any token for quick transfer to the mobile app.
 - Optional automatic creation of the ntfy user on the first LDAP login
   (random password, no tokens).
 - List of ntfy users with search by name.
@@ -118,6 +122,7 @@ See [.env.example](.env.example). Key ones:
 |------------|------------|
 | `SESSION_SECRET` | session cookie secret (required in production) |
 | `AUTH_PROVIDERS` | ordered list of active providers (`local`, `ldap`) |
+| `MAX_TOKENS_PER_USER` | maximum number of tokens per ntfy user (default 4) |
 | `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_SEARCH_BASE`, ... | LDAP provider settings |
 | `PANEL_DB` | path to the panel SQLite database |
 | `NTFY_BIN` | path to the ntfy executable |

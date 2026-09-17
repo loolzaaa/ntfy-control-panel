@@ -11,8 +11,9 @@ its CLI.
 The panel has two roles:
 
 - **Administrator** — full access: users, tokens, topic permissions and the audit log.
-- **User** — a personal area only. At the moment it shows a "Data will be available
-  later" placeholder; administrative functionality is not available to it.
+- **User** — a self-service area for own access tokens: create and delete tokens
+  (within the configured limit) and show QR codes. Administrative functionality is
+  not available.
 
 Administrators are local panel accounts. Users authenticate through an external
 identity provider (LDAP) and receive the `user` role automatically.
@@ -40,8 +41,8 @@ Administrators see the following sections at the top of the screen:
 On the right side of the header are the user name, the language switcher and the
 "Log out" button; administrators additionally see "Change password".
 
-Users with the `user` role do not see the administrative sections: they only get
-the "Data will be available later" placeholder page.
+Users with the `user` role do not see the administrative sections: they get the
+"My tokens" page for managing their own access tokens.
 
 ## 4. User list
 
@@ -102,7 +103,11 @@ information about the last access.
 
 - **Attach token** — specify a label and, if needed, an expiration
   (for example, `30d`; empty means no expiration), then click the button. The
-  value of the new token is shown once.
+  value of the new token is shown once. Each user can have at most
+  `MAX_TOKENS_PER_USER` tokens (4 by default); once the limit is reached the
+  button is disabled.
+- **QR code** — the "QR code" button opens a scannable code containing the token,
+  for quick transfer to the ntfy mobile app.
 - **Delete token** — the "Delete" button in the token's row.
 - **Delete all tokens** — the button above the table; deletes all of the user's
   tokens in a single operation.

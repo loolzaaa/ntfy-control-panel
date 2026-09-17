@@ -3,6 +3,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
 import ConfirmDialog from './ConfirmDialog.vue';
+import TokenQrModal from './TokenQrModal.vue';
 import client from '../api/client';
 import { useToastStore } from '../stores/toast';
 import { useErrorText } from '../composables/useErrorText';
@@ -22,6 +23,7 @@ const loading = ref(true);
 const loadError = ref(null);
 const user = ref(null);
 const tokens = ref([]);
+const maxTokens = ref(4);
 
 const newTokenLabel = ref('');
 const newTokenExpires = ref('');
@@ -34,10 +36,12 @@ const accessBusy = ref(false);
 
 const confirmState = ref(null);
 const confirmBusy = ref(false);
+const qrToken = ref(null);
 
 const isAnonymous = computed(() => Boolean(user.value && user.value.anonymous));
 const isAdmin = computed(() => Boolean(user.value && user.value.admin));
 const canManage = computed(() => !isAnonymous.value);
+const tokenLimitReached = computed(() => tokens.value.length >= maxTokens.value);
 
 const errorText = computed(() => errText(loadError.value));
 
@@ -61,6 +65,7 @@ async function load() {
     const { data } = await client.get(endpoint.value);
     user.value = data.user;
     tokens.value = data.tokens || [];
+    maxTokens.value = data.maxTokens || maxTokens.value;
     if (!newTokenLabel.value) {
       newTokenLabel.value = data.user.anonymous ? '' : data.user.name;
     }
@@ -243,22 +248,26 @@ async function runConfirm() {
               :placeholder="t('userCard.tokens.expiresPlaceholder')"
             />
           </div>
-          <button class="btn" type="button" :disabled="tokenBusy" @click="addToken">
+          <button class="btn" type="button" :disabled="tokenBusy || tokenLimitReached" @click="addToken">
             {{ tokenBusy ? t('userCard.tokens.attaching') : t('userCard.tokens.attach') }}
           </button>
         </div>
 
+        <p v-if="tokenLimitReached" class="form-hint" style="margin: 0 0 12px">
+          {{ t('profile.limitReached') }}
+        </p>
+
         <div v-if="createdToken" class="card" style="padding: 14px; margin-bottom: 14px">
           <p class="muted" style="margin: 0 0 8px">{{ t('userCard.tokens.createdWarning') }}</p>
           <div class="token-value">{{ createdToken.value }}</div>
-          <button
-            class="btn btn--secondary btn--sm"
-            type="button"
-            style="margin-top: 10px"
-            @click="copyToken(createdToken.value)"
-          >
-            {{ t('userCard.tokens.copy') }}
-          </button>
+          <div style="display: flex; gap: 8px; margin-top: 10px">
+            <button class="btn btn--secondary btn--sm" type="button" @click="copyToken(createdToken.value)">
+              {{ t('userCard.tokens.copy') }}
+            </button>
+            <button class="btn btn--secondary btn--sm" type="button" @click="qrToken = createdToken">
+              {{ t('qr.button') }}
+            </button>
+          </div>
         </div>
 
         <div class="table-wrap">
@@ -278,6 +287,9 @@ async function runConfirm() {
                   <span class="token-value">{{ mask(token.value) }}</span>
                   <button class="btn btn--ghost btn--sm" type="button" @click="copyToken(token.value)">
                     {{ t('common.copy') }}
+                  </button>
+                  <button class="btn btn--ghost btn--sm" type="button" @click="qrToken = token">
+                    {{ t('qr.button') }}
                   </button>
                 </td>
                 <td>{{ token.label || '—' }}</td>
@@ -405,6 +417,8 @@ async function runConfirm() {
       </button>
     </template>
   </BaseModal>
+
+  <TokenQrModal v-if="qrToken" :value="qrToken.value" :label="qrToken.label" @close="qrToken = null" />
 
   <ConfirmDialog
     v-if="confirmState"

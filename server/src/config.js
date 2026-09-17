@@ -96,6 +96,9 @@ const config = {
       role: process.env.LDAP_ROLE || 'user',
     },
   },
+  tokens: {
+    maxPerUser: toInt(process.env.MAX_TOKENS_PER_USER, 4),
+  },
   bootstrap: {
     username: (process.env.BOOTSTRAP_ADMIN_USERNAME || 'admin').trim(),
     password: process.env.BOOTSTRAP_ADMIN_PASSWORD || '',

@@ -14,6 +14,7 @@ const { errorHandler, apiNotFoundHandler } = require('./middleware/errorHandler'
 const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const auditRoutes = require('./routes/audit');
+const meRoutes = require('./routes/me');
 
 function createApp() {
   const app = express();
@@ -63,6 +64,7 @@ function createApp() {
   });
 
   app.use('/api/auth', authRoutes);
+  app.use('/api/me', requireAuth, csrfProtection, meRoutes);
   app.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
   app.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
 

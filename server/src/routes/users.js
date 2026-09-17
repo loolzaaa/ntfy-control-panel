@@ -1,8 +1,10 @@
 'use strict';
 
 const express = require('express');
+const config = require('../config');
 const ntfy = require('../ntfy/service');
 const audit = require('../services/audit');
+const { assertTokenLimit } = require('../services/tokenPolicy');
 const { validate, createUserSchema, addTokenSchema, accessSchema, topicPatternSchema } = require('../utils/validate');
 const { maskToken } = require('../utils/mask');
 const { badRequest, forbidden } = require('../errors');
@@ -68,7 +70,7 @@ router.get('/:username', async (req, res) => {
   const { username } = req.params;
   const user = await ntfy.getUser(username);
   const tokens = username === '*' ? [] : await ntfy.listTokens(username);
-  res.json({ user: serializeUser(user), tokens });
+  res.json({ user: serializeUser(user), tokens, maxTokens: config.tokens.maxPerUser });
 });
 
 router.delete('/:username', async (req, res) => {
@@ -92,6 +94,7 @@ router.post('/:username/tokens', async (req, res) => {
   assertManageable(username);
 
   const data = validate(addTokenSchema, req.body || {});
+  await assertTokenLimit(username);
   const token = await ntfy.addToken(username, data.label || undefined, data.expires || undefined);
 
   audit.log({
