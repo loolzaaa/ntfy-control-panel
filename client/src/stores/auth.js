@@ -22,6 +22,16 @@ export const useAuthStore = defineStore('auth', {
         setCsrfToken(data.csrfToken);
         this.user = data.user;
         this.initialized = true;
+
+        try {
+          await client.get('/auth/me');
+        } catch {
+          setCsrfToken(null);
+          this.user = null;
+          const sessionError = new Error('Session cookie was not accepted by the browser');
+          sessionError.code = 'session_not_established';
+          throw sessionError;
+        }
       } finally {
         this.loading = false;
       }

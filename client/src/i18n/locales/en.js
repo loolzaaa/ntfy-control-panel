@@ -242,6 +242,8 @@ export default {
     invalid_permission: 'Invalid permission value',
     topic_required: 'Topic is required',
     token_limit_reached: 'Token limit reached',
+    session_not_established:
+      'Signed in, but the browser did not accept the session cookie. If the panel runs over plain HTTP, set COOKIE_SECURE=auto (or false).',
     ntfy_bin_not_found: 'The ntfy executable was not found. Check the NTFY_BIN setting.',
     ntfy_auth_file_missing:
       'The ntfy auth database (auth-file) was not found. Start the ntfy server at least once.',

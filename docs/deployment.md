@@ -280,7 +280,7 @@ TRUST_PROXY=true
 
 SESSION_SECRET=<insert the generated value>
 SESSION_TTL_HOURS=8
-COOKIE_SECURE=true
+COOKIE_SECURE=auto
 
 PANEL_DB=/var/lib/ntfy-panel/panel.db
 
@@ -304,9 +304,10 @@ sudo chown root:root /opt/ntfy-control-panel/.env
 sudo chmod 600 /opt/ntfy-control-panel/.env
 ```
 
-> `COOKIE_SECURE=true` requires HTTPS. If HTTPS is terminated at a reverse proxy,
-> this is a correct configuration. For local HTTP tests, set
-> `COOKIE_SECURE=false`.
+> `COOKIE_SECURE=auto` sets the Secure flag only for secure requests: HTTPS
+> terminated directly, or HTTPS at a reverse proxy with `TRUST_PROXY=true`. Use
+> `COOKIE_SECURE=true` to force the flag, or `COOKIE_SECURE=false` for plain
+> HTTP (for example, local tests).
 
 ### Initial administrator
 

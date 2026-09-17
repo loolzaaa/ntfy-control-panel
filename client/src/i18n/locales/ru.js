@@ -242,6 +242,8 @@ export default {
     invalid_permission: 'Недопустимое значение прав доступа',
     topic_required: 'Не указан топик',
     token_limit_reached: 'Достигнут лимит токенов',
+    session_not_established:
+      'Вход выполнен, но браузер не принял cookie сессии. Если панель работает по HTTP, установите COOKIE_SECURE=auto (или false).',
     ntfy_bin_not_found: 'Не найден исполняемый файл ntfy. Проверьте переменную NTFY_BIN.',
     ntfy_auth_file_missing:
       'Файл базы ntfy (auth-file) не найден. Запустите сервер ntfy хотя бы один раз.',

@@ -2,8 +2,11 @@
 
 const path = require('node:path');
 const crypto = require('node:crypto');
+const dotenv = require('dotenv');
 
-require('dotenv').config();
+if (process.env.NODE_ENV !== 'test') {
+  dotenv.config();
+}
 
 const rootDir = path.resolve(__dirname, '..', '..');
 
@@ -19,6 +22,19 @@ function toBool(value, defaultValue) {
 function toInt(value, defaultValue) {
   const parsed = Number.parseInt(value, 10);
   return Number.isFinite(parsed) ? parsed : defaultValue;
+}
+
+function parseCookieSecure(value) {
+  const normalized = String(value === undefined || value === null ? '' : value)
+    .trim()
+    .toLowerCase();
+  if (['1', 'true', 'yes', 'on'].includes(normalized)) {
+    return true;
+  }
+  if (['0', 'false', 'no', 'off'].includes(normalized)) {
+    return false;
+  }
+  return 'auto';
 }
 
 function parseProviderList(value) {
@@ -68,7 +84,7 @@ const config = {
     secretWasGenerated: (process.env.SESSION_SECRET || '').trim().length < 16,
     ttlHours: toInt(process.env.SESSION_TTL_HOURS, 8),
     cookieName: process.env.COOKIE_NAME || 'ntfy_panel_sid',
-    cookieSecure: toBool(process.env.COOKIE_SECURE, env === 'production'),
+    cookieSecure: parseCookieSecure(process.env.COOKIE_SECURE),
   },
   ntfy: {
     bin: process.env.NTFY_BIN || 'ntfy',
