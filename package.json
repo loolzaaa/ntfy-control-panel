@@ -1,0 +1,31 @@
+{
+  "name": "ntfy-control-panel",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ntfy web administration panel (manage users, tokens, and access permissions)",
+  "license": "MIT",
+  "type": "commonjs",
+  "main": "server/src/index.js",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node server/src/index.js",
+    "dev": "node --watch server/src/index.js",
+    "build": "npm --prefix client run build",
+    "client:dev": "npm --prefix client run dev",
+    "client:install": "npm --prefix client install",
+    "install:all": "npm install && npm --prefix client install",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^13.0.3",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.7.0",
+    "express-session": "^1.19.0",
+    "helmet": "^8.3.0",
+    "zod": "^4.6.5"
+  }
+}
