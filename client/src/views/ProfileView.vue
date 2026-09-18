@@ -30,6 +30,11 @@ const qrToken = ref(null);
 const tokenToDelete = ref(null);
 const deleteBusy = ref(false);
 
+const customPassword = ref('');
+const passwordBusy = ref(false);
+const createdPassword = ref(null);
+const showPasswordQr = ref(false);
+
 const errorText = computed(() => errText(loadError.value));
 const limitReached = computed(() => tokens.value.length >= maxTokens.value);
 
@@ -109,6 +114,43 @@ async function copyToken(value) {
   }
 }
 
+async function changeNtfyPassword() {
+  passwordBusy.value = true;
+  createdPassword.value = null;
+  try {
+    await auth.changeNtfyPassword(customPassword.value);
+    toast.success(t('profile.ntfyPassword.updated'));
+    customPassword.value = '';
+  } catch (err) {
+    toast.error(errText(err));
+  } finally {
+    passwordBusy.value = false;
+  }
+}
+
+async function generateNtfyPassword() {
+  passwordBusy.value = true;
+  createdPassword.value = null;
+  try {
+    const data = await auth.generateNtfyPassword();
+    createdPassword.value = data.password;
+    toast.success(t('profile.ntfyPassword.generated'));
+  } catch (err) {
+    toast.error(errText(err));
+  } finally {
+    passwordBusy.value = false;
+  }
+}
+
+async function copyPassword(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(t('profile.copied'));
+  } catch {
+    toast.error(t('profile.copyFailed'));
+  }
+}
+
 async function runDelete() {
   if (!tokenToDelete.value) {
     return;
@@ -147,6 +189,55 @@ async function runDelete() {
       <span class="muted">{{ auth.username }}</span>
       <span class="badge">{{ t('profile.limit', { used: tokens.length, max: maxTokens }) }}</span>
     </div>
+  </div>
+
+  <div v-if="!auth.isLocal" class="card" style="padding: 16px; margin-bottom: 16px">
+    <div class="section__head" style="padding: 0">
+      <h3>{{ t('profile.ntfyPassword.title') }}</h3>
+    </div>
+    <p class="form-hint" style="margin: 0 0 12px">{{ t('profile.ntfyPassword.hint') }}</p>
+
+    <div v-if="!ntfyUserExists" class="empty-state" style="padding: 12px 0">
+      {{ t('profile.ntfyPassword.missing') }}
+    </div>
+    <template v-else>
+      <div v-if="createdPassword" class="card" style="padding: 14px; margin-bottom: 14px">
+        <div class="form-hint" style="margin-bottom: 6px">{{ t('profile.ntfyPassword.newPassword') }}</div>
+        <div class="token-value">{{ createdPassword }}</div>
+        <div style="display: flex; gap: 8px; margin-top: 10px">
+          <button class="btn btn--secondary btn--sm" type="button" @click="copyPassword(createdPassword)">
+            {{ t('common.copy') }}
+          </button>
+          <button class="btn btn--secondary btn--sm" type="button" @click="showPasswordQr = true">
+            {{ t('qr.button') }}
+          </button>
+        </div>
+      </div>
+
+      <div class="inline-form" style="margin-bottom: 0">
+        <div class="field">
+          <label for="self-password">{{ t('profile.ntfyPassword.newLabel') }}</label>
+          <input
+            id="self-password"
+            v-model="customPassword"
+            type="password"
+            autocomplete="new-password"
+            :placeholder="t('profile.ntfyPassword.newPlaceholder')"
+          />
+        </div>
+        <button
+          class="btn"
+          type="button"
+          :disabled="passwordBusy || customPassword.length < 8"
+          @click="changeNtfyPassword"
+        >
+          {{ passwordBusy ? t('common.saving') : t('profile.ntfyPassword.change') }}
+        </button>
+        <button class="btn btn--secondary" type="button" :disabled="passwordBusy" @click="generateNtfyPassword">
+          {{ t('profile.ntfyPassword.generate') }}
+        </button>
+      </div>
+    </template>
   </div>
 
   <div class="card" style="padding: 16px; margin-bottom: 16px">
@@ -266,6 +357,17 @@ async function runDelete() {
   </div>
 
   <TokenQrModal v-if="qrToken" :value="qrToken.value" :label="qrToken.label" @close="qrToken = null" />
+
+  <TokenQrModal
+    v-if="showPasswordQr && createdPassword"
+    :value="createdPassword"
+    :label="auth.username"
+    :title="t('profile.ntfyPassword.qrTitle')"
+    :hint="t('profile.ntfyPassword.qrHint')"
+    :copied-text="t('profile.copied')"
+    :copy-failed-text="t('profile.copyFailed')"
+    @close="showPasswordQr = false"
+  />
 
   <ConfirmDialog
     v-if="tokenToDelete"

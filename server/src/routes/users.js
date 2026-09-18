@@ -5,7 +5,14 @@ const config = require('../config');
 const ntfy = require('../ntfy/service');
 const audit = require('../services/audit');
 const { assertTokenLimit } = require('../services/tokenPolicy');
-const { validate, createUserSchema, addTokenSchema, accessSchema, topicPatternSchema } = require('../utils/validate');
+const {
+  validate,
+  createUserSchema,
+  ntfyPasswordSchema,
+  addTokenSchema,
+  accessSchema,
+  topicPatternSchema,
+} = require('../utils/validate');
 const { maskToken } = require('../utils/mask');
 const { badRequest, forbidden } = require('../errors');
 
@@ -55,8 +62,6 @@ router.post('/', async (req, res) => {
   const result = await ntfy.createUser({
     username: data.username,
     role: data.role,
-    createToken: data.createToken,
-    tokenLabel: data.tokenLabel || undefined,
   });
 
   audit.log({
@@ -66,15 +71,47 @@ router.post('/', async (req, res) => {
     targetUser: data.username,
     details: {
       role: data.role,
-      tokenCreated: Boolean(result.token),
-      token: result.token ? maskToken(result.token.value) : null,
+      passwordGenerated: true,
     },
   });
 
   res.status(201).json({
     user: { name: result.username, role: result.role },
-    token: result.token,
+    password: result.password,
   });
+});
+
+router.put('/:username/password', async (req, res) => {
+  const { username } = req.params;
+  assertManageable(username);
+
+  const data = validate(ntfyPasswordSchema, req.body || {});
+  const custom = typeof data.password === 'string' && data.password.length > 0;
+
+  if (custom) {
+    await ntfy.changePassword(username, data.password);
+  } else {
+    const password = await ntfy.resetPassword(username);
+    audit.log({
+      adminId: req.user.id,
+      adminUsername: req.user.username,
+      action: 'user.password_change',
+      targetUser: username,
+      details: { generated: true },
+    });
+    res.json({ password });
+    return;
+  }
+
+  audit.log({
+    adminId: req.user.id,
+    adminUsername: req.user.username,
+    action: 'user.password_change',
+    targetUser: username,
+    details: { generated: false },
+  });
+
+  res.json({ ok: true });
 });
 
 router.get('/:username', async (req, res) => {

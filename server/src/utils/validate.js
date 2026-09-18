@@ -34,9 +34,31 @@ const loginSchema = z.object({
 const createUserSchema = z.object({
   username: usernameSchema,
   role: z.enum(ROLES).default('user'),
-  createToken: z.boolean().default(true),
-  tokenLabel: z.string().trim().max(64).optional().or(z.literal('')),
 });
+
+const ntfyPasswordSchema = z.object({
+  password: z
+    .string()
+    .min(8, 'The password must contain at least 8 characters')
+    .max(72, 'The password must contain at most 72 characters')
+    .optional()
+    .or(z.literal('')),
+});
+
+const meNtfyPasswordSchema = z
+  .object({
+    newPassword: z
+      .string()
+      .min(8, 'The password must contain at least 8 characters')
+      .max(72, 'The password must contain at most 72 characters')
+      .optional()
+      .or(z.literal('')),
+    generate: z.boolean().default(false),
+  })
+  .refine((data) => data.generate || Boolean(data.newPassword), {
+    message: 'Specify a new password or request generation',
+    path: ['newPassword'],
+  });
 
 const addTokenSchema = z.object({
   label: z.string().trim().max(64).optional().or(z.literal('')),
@@ -95,6 +117,8 @@ module.exports = {
   topicPatternSchema,
   loginSchema,
   createUserSchema,
+  ntfyPasswordSchema,
+  meNtfyPasswordSchema,
   addTokenSchema,
   accessSchema,
   auditQuerySchema,

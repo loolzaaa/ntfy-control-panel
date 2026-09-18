@@ -40,28 +40,46 @@ test('listUsers: parses ntfy user list output', async () => {
   assert.equal(users[0].name, 'phil');
 });
 
-test('createUser: creates user and token, passes password via env', async () => {
+test('createUser: creates user and returns a generated password via env', async () => {
   responder = (args) => {
     if (args[0] === 'user' && args[1] === 'add') {
       return { stdout: 'user alice added with role user\n' };
     }
-    if (args[0] === 'token' && args[1] === 'add') {
-      return { stdout: 'token tk_7eevizlsiwf9yi4uxsrs83r4352o0 created for user alice, never expires\n' };
-    }
     return { stdout: '' };
   };
 
-  const result = await service.createUser({ username: 'alice', role: 'user', createToken: true });
+  const result = await service.createUser({ username: 'alice', role: 'user' });
 
   assert.equal(result.username, 'alice');
-  assert.equal(result.token.value, 'tk_7eevizlsiwf9yi4uxsrs83r4352o0');
+  assert.equal(result.role, 'user');
+  assert.equal(result.password.length, 20);
+  assert.match(result.password, /^[A-HJ-NP-Za-km-z2-9]+$/);
 
   const addCall = calls.find((call) => call.args[1] === 'add' && call.args[0] === 'user');
   assert.deepEqual(addCall.args, ['user', 'add', '--role=user', 'alice']);
-  assert.ok(addCall.options.env.NTFY_PASSWORD, 'password must be passed via NTFY_PASSWORD');
+  assert.equal(addCall.options.env.NTFY_PASSWORD, result.password);
 
-  const tokenCall = calls.find((call) => call.args[0] === 'token');
-  assert.deepEqual(tokenCall.args, ['token', 'add', '--label=alice', 'alice']);
+  assert.equal(calls.filter((call) => call.args[0] === 'token').length, 0);
+});
+
+test('changePassword: passes the new password via NTFY_PASSWORD', async () => {
+  responder = () => ({ stdout: 'changed password for user alice\n' });
+
+  await service.changePassword('alice', 'new-password-123');
+
+  assert.deepEqual(calls[0].args, ['user', 'change-pass', 'alice']);
+  assert.equal(calls[0].options.env.NTFY_PASSWORD, 'new-password-123');
+});
+
+test('resetPassword: generates a password and applies it', async () => {
+  responder = () => ({ stdout: 'changed password for user alice\n' });
+
+  const password = await service.resetPassword('alice');
+
+  assert.equal(password.length, 20);
+  assert.match(password, /^[A-HJ-NP-Za-km-z2-9]+$/);
+  assert.deepEqual(calls[0].args, ['user', 'change-pass', 'alice']);
+  assert.equal(calls[0].options.env.NTFY_PASSWORD, password);
 });
 
 test('addToken: creates token with label and expiration', async () => {
@@ -131,7 +149,7 @@ test('CLI "already exists" error is mapped to 409', async () => {
   });
 
   await assert.rejects(
-    () => service.createUser({ username: 'alice', createToken: false }),
+    () => service.createUser({ username: 'alice' }),
     (err) => {
       assert.equal(err.status, 409);
       assert.equal(err.code, 'user_exists');

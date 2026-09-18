@@ -59,5 +59,13 @@ export const useAuthStore = defineStore('auth', {
     async changePassword(currentPassword, newPassword) {
       await client.post('/auth/change-password', { currentPassword, newPassword });
     },
+    async changeNtfyPassword(newPassword) {
+      const { data } = await client.put('/me/password', { newPassword });
+      return data;
+    },
+    async generateNtfyPassword() {
+      const { data } = await client.put('/me/password', { generate: true });
+      return data;
+    },
   },
 });

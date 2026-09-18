@@ -54,8 +54,9 @@ function renderUser(name) {
   return `${lines.join('\n')}\n`;
 }
 
-function handle(args) {
+function handle(args, options = {}) {
   const cmd = args[0];
+  const env = options.env || {};
 
   if (cmd === 'user' && args[1] === 'list') {
     return [...state.users.keys()].map(renderUser).join('');
@@ -68,8 +69,17 @@ function handle(args) {
     if (state.users.has(name)) {
       return { error: `user ${name} already exists` };
     }
-    state.users.set(name, { name, role });
+    state.users.set(name, { name, role, password: env.NTFY_PASSWORD });
     return `user ${name} added with role ${role}\n`;
+  }
+
+  if (cmd === 'user' && args[1] === 'change-pass') {
+    const name = args[args.length - 1];
+    if (!state.users.has(name)) {
+      return { error: `user ${name} does not exist` };
+    }
+    state.users.get(name).password = env.NTFY_PASSWORD;
+    return `changed password for user ${name}\n`;
   }
 
   if (cmd === 'user' && args[1] === 'del') {
@@ -157,7 +167,7 @@ function handle(args) {
 
 childProcess.execFile = (bin, args, options, callback) => {
   process.nextTick(() => {
-    const result = handle(args);
+    const result = handle(args, options);
     if (result && result.error) {
       callback(Object.assign(new Error(result.error), { code: 1 }), '', result.error);
     } else {
@@ -241,14 +251,10 @@ test('full user lifecycle over the HTTP API', async () => {
 
   const csrfHeaders = { 'x-csrf-token': csrf };
 
-  const created = await api(
-    'POST',
-    '/api/users',
-    { username: 'alice', role: 'user', createToken: true, tokenLabel: 'alice' },
-    csrfHeaders
-  );
+  const created = await api('POST', '/api/users', { username: 'alice', role: 'user' }, csrfHeaders);
   assert.equal(created.status, 201);
-  assert.match(created.data.token.value, /^tk_/);
+  assert.match(created.data.password, /^[A-HJ-NP-Za-km-z2-9]{20}$/);
+  assert.equal(state.users.get('alice').password, created.data.password);
 
   const list = await api('GET', '/api/users');
   assert.equal(list.status, 200);
@@ -256,8 +262,22 @@ test('full user lifecycle over the HTTP API', async () => {
 
   const detail = await api('GET', '/api/users/alice');
   assert.equal(detail.status, 200);
-  assert.equal(detail.data.tokens.length, 1);
-  assert.equal(detail.data.tokens[0].label, 'alice');
+  assert.equal(detail.data.tokens.length, 0);
+
+  const generatedPassword = await api('PUT', '/api/users/alice/password', {}, csrfHeaders);
+  assert.equal(generatedPassword.status, 200);
+  assert.match(generatedPassword.data.password, /^[A-HJ-NP-Za-km-z2-9]{20}$/);
+  assert.equal(state.users.get('alice').password, generatedPassword.data.password);
+
+  const customPassword = await api(
+    'PUT',
+    '/api/users/alice/password',
+    { password: 'custom-pass-123' },
+    csrfHeaders
+  );
+  assert.equal(customPassword.status, 200);
+  assert.equal(customPassword.data.ok, true);
+  assert.equal(state.users.get('alice').password, 'custom-pass-123');
 
   const extraToken = await api(
     'POST',
@@ -266,6 +286,14 @@ test('full user lifecycle over the HTTP API', async () => {
     csrfHeaders
   );
   assert.equal(extraToken.status, 201);
+
+  const secondToken = await api(
+    'POST',
+    '/api/users/alice/tokens',
+    { label: 'phone' },
+    csrfHeaders
+  );
+  assert.equal(secondToken.status, 201);
 
   const access = await api(
     'PUT',
@@ -283,7 +311,7 @@ test('full user lifecycle over the HTTP API', async () => {
 
   const deleteOne = await api(
     'DELETE',
-    `/api/users/alice/tokens/${encodeURIComponent(created.data.token.value)}`,
+    `/api/users/alice/tokens/${encodeURIComponent(extraToken.data.token.value)}`,
     undefined,
     csrfHeaders
   );
@@ -311,7 +339,7 @@ test('full user lifecycle over the HTTP API', async () => {
   const audit = await api('GET', '/api/audit?pageSize=100');
   assert.equal(audit.status, 200);
   const actions = audit.data.items.map((item) => item.action);
-  for (const expected of ['user.create', 'token.create', 'access.set', 'access.delete', 'token.delete', 'token.delete_all', 'user.delete']) {
+  for (const expected of ['user.create', 'user.password_change', 'token.create', 'access.set', 'access.delete', 'token.delete', 'token.delete_all', 'user.delete']) {
     assert.ok(actions.includes(expected), `audit must contain action ${expected}`);
   }
 });
@@ -331,8 +359,8 @@ test('user list is sorted by username', async () => {
   const login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
   const headers = { 'x-csrf-token': login.data.csrfToken };
 
-  await api('POST', '/api/users', { username: 'zeta', createToken: false }, headers);
-  await api('POST', '/api/users', { username: 'alpha', createToken: false }, headers);
+  await api('POST', '/api/users', { username: 'zeta' }, headers);
+  await api('POST', '/api/users', { username: 'alpha' }, headers);
 
   const res = await api('GET', '/api/users');
   assert.equal(res.status, 200);
@@ -371,6 +399,27 @@ test('regular users cannot access admin endpoints', async () => {
   assert.equal(auditList.status, 403);
 });
 
+test('self-service ntfy password is restricted to LDAP accounts', async () => {
+  users.createLocalUser('localpw', 'localpwpass', 'user');
+
+  const login = await api('POST', '/api/auth/login', { username: 'localpw', password: 'localpwpass' });
+  assert.equal(login.status, 200);
+  const headers = { 'x-csrf-token': login.data.csrfToken };
+
+  const res = await api('PUT', '/api/me/password', { newPassword: 'whatever-123' }, headers);
+  assert.equal(res.status, 400);
+  assert.equal(res.data.error.code, 'ntfy_password_not_applicable');
+});
+
+test('admin password endpoint validates the password length', async () => {
+  const login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  const headers = { 'x-csrf-token': login.data.csrfToken };
+
+  const res = await api('PUT', '/api/users/viewer/password', { password: 'short' }, headers);
+  assert.equal(res.status, 400);
+  assert.equal(res.data.error.code, 'validation_error');
+});
+
 test('self-service tokens respect the configured limit', async () => {
   let login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
   let csrf = login.data.csrfToken;
@@ -378,7 +427,7 @@ test('self-service tokens respect the configured limit', async () => {
   const created = await api(
     'POST',
     '/api/users',
-    { username: 'viewer', role: 'user', createToken: false },
+    { username: 'viewer', role: 'user' },
     { 'x-csrf-token': csrf }
   );
   assert.equal(created.status, 201);

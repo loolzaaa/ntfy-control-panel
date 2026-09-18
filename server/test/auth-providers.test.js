@@ -325,7 +325,7 @@ test('LDAP login provisions the ntfy user without tokens', async () => {
 
     assert.equal(result.user.username, 'bob');
     assert.equal(result.ntfyProvision.created, true);
-    assert.deepEqual(created, [{ username: 'bob', role: 'user', createToken: false }]);
+    assert.deepEqual(created, [{ username: 'bob', role: 'user' }]);
   } finally {
     ntfy.getUser = originalGetUser;
     ntfy.createUser = originalCreateUser;

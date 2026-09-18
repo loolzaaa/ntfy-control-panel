@@ -5,12 +5,20 @@ const { runNtfy } = require('./runner');
 const { parseUserList, parseTokenList, parseTokenAdd, parseNtfyDate } = require('./parsers');
 const { notFound, AppError } = require('../errors');
 
+const PASSWORD_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';
+const PASSWORD_LENGTH = 20;
+
 /**
- * Generates a random password for a new ntfy user.
- * The password is not shown to the administrator and is used only to create the record.
+ * Generates a random, human-readable password for an ntfy user.
+ * Ambiguous characters (0/O, 1/l/I) are excluded so the password can be typed on a phone.
+ * @returns {string}
  */
 function generatePassword() {
-  return crypto.randomBytes(24).toString('base64url');
+  let password = '';
+  for (let index = 0; index < PASSWORD_LENGTH; index += 1) {
+    password += PASSWORD_ALPHABET[crypto.randomInt(PASSWORD_ALPHABET.length)];
+  }
+  return password;
 }
 
 async function listUsers() {
@@ -29,26 +37,42 @@ async function getUser(username) {
 }
 
 /**
- * Creates an ntfy user. The password is generated automatically.
- * @param {{username: string, role?: string, createToken?: boolean, tokenLabel?: string}} input
+ * Creates an ntfy user with a generated password.
+ * The password is returned once so the administrator can hand it to the user.
+ * @param {{username: string, role?: string}} input
+ * @returns {Promise<{username: string, role: string, password: string}>}
  */
 async function createUser(input) {
-  const { username, role = 'user', createToken = false, tokenLabel } = input;
+  const { username, role = 'user' } = input;
   const password = generatePassword();
 
   await runNtfy(['user', 'add', `--role=${role}`, username], { password });
 
-  let token = null;
-  if (createToken) {
-    const label = tokenLabel && tokenLabel.trim() ? tokenLabel.trim() : username;
-    token = await addToken(username, label);
-  }
-
-  return { username, role, token };
+  return { username, role, password };
 }
 
 async function deleteUser(username) {
   await runNtfy(['user', 'del', username]);
+}
+
+/**
+ * Changes an ntfy user's password. The new password is passed via NTFY_PASSWORD.
+ * @param {string} username
+ * @param {string} password
+ */
+async function changePassword(username, password) {
+  await runNtfy(['user', 'change-pass', username], { password });
+}
+
+/**
+ * Generates and applies a new password for an ntfy user.
+ * @param {string} username
+ * @returns {Promise<string>} the generated password
+ */
+async function resetPassword(username) {
+  const password = generatePassword();
+  await changePassword(username, password);
+  return password;
 }
 
 async function listTokens(username) {
@@ -123,6 +147,8 @@ module.exports = {
   getUser,
   createUser,
   deleteUser,
+  changePassword,
+  resetPassword,
   listTokens,
   addToken,
   deleteToken,

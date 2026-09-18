@@ -344,8 +344,8 @@ On first launch, when the panel administrator table is empty:
 - if `BOOTSTRAP_ADMIN_PASSWORD` is set, an administrator with this password is created;
 - if the password is not set, it is generated and printed in the log **once**.
 
-After the first login, change the password (the "Change password" button in the
-header).
+After the first login, change the panel password (the "Change password" button in
+the header).
 
 ### Authentication providers (local / LDAP)
 
@@ -369,7 +369,9 @@ LDAP_ROLE=user
 - LDAP users are stored in the panel database with the role `user`; only local
   accounts can be administrators.
 - With `LDAP_PROVISION_NTFY_USER=true`, the ntfy user is created automatically on
-  the first LDAP login (with a random password and no tokens).
+  the first LDAP login (with a random password and no tokens). LDAP users can
+  change their **ntfy** password on the "My tokens" page; their LDAP password is
+  managed by the directory.
 - Connection mode is chosen by the URL and `LDAP_STARTTLS`:
   - plain: `LDAP_URL=ldap://ldap.example.com:389`, `LDAP_STARTTLS=false`;
   - StartTLS: `LDAP_URL=ldap://ldap.example.com:389`, `LDAP_STARTTLS=true`;
@@ -550,7 +552,7 @@ credentials. If the password was generated automatically, read it from the log:
 sudo journalctl -u ntfy-panel | grep -A3 "administrator account created"
 ```
 
-Then change the password via the "Change password" button in the header.
+Then change the panel password via the "Change password" button in the header.
 
 ## 11. Updating
 
@@ -604,8 +606,8 @@ sudo journalctl -u ntfy-panel -f
 2. `sudo systemctl status ntfy-panel` shows the panel running as `ntfy-panel`.
 3. The panel opens over HTTPS, and an administrator logs in.
 4. The list of ntfy users is displayed and search by name works.
-5. Creating a user (with and without a token) succeeds.
-6. Tokens are created and deleted in the user card (individually and all at once).
+5. Creating a user succeeds and the generated ntfy password is shown once (with a QR code).
+6. The ntfy password can be reset (generated or custom) in the user card, and tokens are created and deleted there (individually and all at once).
 7. Topic permissions are assigned, changed and deleted.
 8. Deleting a user proceeds with confirmation.
 9. The audit log contains all performed operations.

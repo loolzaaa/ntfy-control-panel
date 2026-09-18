@@ -1,5 +1,5 @@
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
 import TokenQrModal from './TokenQrModal.vue';
@@ -15,25 +15,12 @@ const toast = useToastStore();
 
 const username = ref('');
 const role = ref('user');
-const createToken = ref(true);
-const tokenLabel = ref('');
-const labelTouched = ref(false);
 const apiError = ref(null);
 const busy = ref(false);
 const result = ref(null);
 const showQr = ref(false);
 
 const errorText = computed(() => errText(apiError.value));
-
-watch(username, (value) => {
-  if (!labelTouched.value) {
-    tokenLabel.value = value;
-  }
-});
-
-function onLabelInput() {
-  labelTouched.value = true;
-}
 
 async function submit() {
   apiError.value = null;
@@ -42,18 +29,11 @@ async function submit() {
     const payload = {
       username: username.value.trim(),
       role: role.value,
-      createToken: createToken.value,
-      tokenLabel: createToken.value ? tokenLabel.value.trim() || username.value.trim() : '',
     };
     const { data } = await client.post('/users', payload);
     toast.success(t('createUser.created', { name: data.user.name }));
     emit('created', data);
-
-    if (data.token) {
-      result.value = data;
-    } else {
-      emit('close');
-    }
+    result.value = data;
   } catch (err) {
     apiError.value = err;
   } finally {
@@ -61,12 +41,12 @@ async function submit() {
   }
 }
 
-async function copyToken() {
+async function copyPassword() {
   try {
-    await navigator.clipboard.writeText(result.value.token.value);
-    toast.success(t('userCard.tokens.copied'));
+    await navigator.clipboard.writeText(result.value.password);
+    toast.success(t('createUser.passwordCopied'));
   } catch {
-    toast.error(t('userCard.tokens.copyFailed'));
+    toast.error(t('createUser.passwordCopyFailed'));
   }
 }
 </script>
@@ -96,36 +76,20 @@ async function copyToken() {
           <span class="form-hint">{{ t('createUser.roleHint') }}</span>
         </div>
 
-        <label class="checkbox">
-          <input v-model="createToken" type="checkbox" />
-          <span>{{ t('createUser.createToken') }}</span>
-        </label>
-
-        <div v-if="createToken" class="inline-form" style="margin-top: 12px">
-          <div class="field">
-            <label for="token-label">{{ t('createUser.tokenLabel') }}</label>
-            <input
-              id="token-label"
-              v-model="tokenLabel"
-              type="text"
-              autocomplete="off"
-              @input="onLabelInput"
-            />
-          </div>
-        </div>
-
         <p v-if="errorText" class="form-error">{{ errorText }}</p>
       </form>
     </template>
 
     <template v-else>
       <p>{{ t('createUser.created', { name: result.user.name }) }}</p>
+      <p class="muted">{{ t('createUser.passwordWarning') }}</p>
 
-      <div v-if="result.token" class="card" style="padding: 16px; margin-top: 12px">
-        <div class="token-value">{{ result.token.value }}</div>
+      <div class="card" style="padding: 16px; margin-top: 12px">
+        <div class="form-hint" style="margin-bottom: 6px">{{ t('createUser.password') }}</div>
+        <div class="token-value">{{ result.password }}</div>
         <div style="display: flex; gap: 8px; margin-top: 12px">
-          <button class="btn btn--secondary btn--sm" type="button" @click="copyToken">
-            {{ t('createUser.copyToken') }}
+          <button class="btn btn--secondary btn--sm" type="button" @click="copyPassword">
+            {{ t('createUser.copyPassword') }}
           </button>
           <button class="btn btn--secondary btn--sm" type="button" @click="showQr = true">
             {{ t('qr.button') }}
@@ -148,9 +112,13 @@ async function copyToken() {
   </BaseModal>
 
   <TokenQrModal
-    v-if="showQr && result && result.token"
-    :value="result.token.value"
-    :label="result.token.label"
+    v-if="showQr && result && result.password"
+    :value="result.password"
+    :label="result.user.name"
+    :title="t('createUser.qrTitle')"
+    :hint="t('createUser.qrHint')"
+    :copied-text="t('createUser.passwordCopied')"
+    :copy-failed-text="t('createUser.passwordCopyFailed')"
     @close="showQr = false"
   />
 </template>

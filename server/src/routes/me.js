@@ -5,8 +5,9 @@ const config = require('../config');
 const ntfy = require('../ntfy/service');
 const audit = require('../services/audit');
 const { assertTokenLimit } = require('../services/tokenPolicy');
-const { validate, addTokenSchema } = require('../utils/validate');
+const { validate, addTokenSchema, meNtfyPasswordSchema } = require('../utils/validate');
 const { maskToken } = require('../utils/mask');
+const { AppError } = require('../errors');
 
 const router = express.Router();
 
@@ -45,6 +46,54 @@ router.get('/access', async (req, res) => {
   }
 
   res.json({ grants, defaultAccess, ntfyUserExists });
+});
+
+router.put('/password', async (req, res) => {
+  if (req.user.source !== 'ldap') {
+    throw new AppError('The ntfy password can only be changed for LDAP accounts', {
+      status: 400,
+      code: 'ntfy_password_not_applicable',
+    });
+  }
+
+  try {
+    await ntfy.getUser(req.user.username);
+  } catch (error) {
+    if (error.code === 'user_not_found') {
+      throw new AppError('No ntfy account is linked to this panel account', {
+        status: 400,
+        code: 'ntfy_user_not_found',
+      });
+    }
+    throw error;
+  }
+
+  const data = validate(meNtfyPasswordSchema, req.body || {});
+  const generated = data.generate || !data.newPassword;
+
+  if (generated) {
+    const password = await ntfy.resetPassword(req.user.username);
+    audit.log({
+      adminId: req.user.id,
+      adminUsername: req.user.username,
+      action: 'user.password_change',
+      targetUser: req.user.username,
+      details: { self: true, generated: true },
+    });
+    res.json({ password });
+    return;
+  }
+
+  await ntfy.changePassword(req.user.username, data.newPassword);
+  audit.log({
+    adminId: req.user.id,
+    adminUsername: req.user.username,
+    action: 'user.password_change',
+    targetUser: req.user.username,
+    details: { self: true, generated: false },
+  });
+
+  res.json({ ok: true });
 });
 
 router.post('/tokens', async (req, res) => {

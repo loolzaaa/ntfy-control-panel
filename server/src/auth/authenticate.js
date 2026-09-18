@@ -35,7 +35,7 @@ async function ensureNtfyUser(username) {
   }
 
   try {
-    await ntfy.createUser({ username, role: 'user', createToken: false });
+    await ntfy.createUser({ username, role: 'user' });
     return { created: true };
   } catch (error) {
     if (error.code === 'user_exists') {

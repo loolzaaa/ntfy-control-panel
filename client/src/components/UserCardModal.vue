@@ -38,6 +38,11 @@ const confirmState = ref(null);
 const confirmBusy = ref(false);
 const qrToken = ref(null);
 
+const customPassword = ref('');
+const passwordBusy = ref(false);
+const createdPassword = ref(null);
+const showPasswordQr = ref(false);
+
 const isAnonymous = computed(() => Boolean(user.value && user.value.anonymous));
 const isAdmin = computed(() => Boolean(user.value && user.value.admin));
 const canManage = computed(() => !isAnonymous.value);
@@ -113,6 +118,43 @@ async function copyToken(value) {
     toast.success(t('userCard.tokens.copied'));
   } catch {
     toast.error(t('userCard.tokens.copyFailed'));
+  }
+}
+
+async function generatePassword() {
+  passwordBusy.value = true;
+  createdPassword.value = null;
+  try {
+    const { data } = await client.put(`${endpoint.value}/password`, {});
+    createdPassword.value = data.password;
+    toast.success(t('userCard.password.generated'));
+  } catch (err) {
+    toast.error(errText(err));
+  } finally {
+    passwordBusy.value = false;
+  }
+}
+
+async function setCustomPassword() {
+  passwordBusy.value = true;
+  createdPassword.value = null;
+  try {
+    await client.put(`${endpoint.value}/password`, { password: customPassword.value });
+    toast.success(t('userCard.password.updated'));
+    customPassword.value = '';
+  } catch (err) {
+    toast.error(errText(err));
+  } finally {
+    passwordBusy.value = false;
+  }
+}
+
+async function copyPassword(value) {
+  try {
+    await navigator.clipboard.writeText(value);
+    toast.success(t('userCard.password.copied'));
+  } catch {
+    toast.error(t('userCard.password.copyFailed'));
   }
 }
 
@@ -235,6 +277,60 @@ async function runConfirm() {
       <div v-if="isAnonymous" class="empty-state" style="padding: 12px 0 20px">
         {{ t('userCard.anonymousNotice') }}
       </div>
+
+      <!-- Password -->
+      <section v-if="canManage" class="section">
+        <div class="section__head">
+          <h3>{{ t('userCard.password.heading') }}</h3>
+        </div>
+
+        <p class="form-hint" style="margin: 0 0 12px">
+          {{ user.provisioned ? t('userCard.password.provisionedHint') : t('userCard.password.hint') }}
+        </p>
+
+        <div v-if="createdPassword" class="card" style="padding: 14px; margin-bottom: 14px">
+          <div class="form-hint" style="margin-bottom: 6px">{{ t('userCard.password.newPassword') }}</div>
+          <div class="token-value">{{ createdPassword }}</div>
+          <div style="display: flex; gap: 8px; margin-top: 10px">
+            <button class="btn btn--secondary btn--sm" type="button" @click="copyPassword(createdPassword)">
+              {{ t('common.copy') }}
+            </button>
+            <button class="btn btn--secondary btn--sm" type="button" @click="showPasswordQr = true">
+              {{ t('qr.button') }}
+            </button>
+          </div>
+        </div>
+
+        <div class="inline-form">
+          <div class="field">
+            <label for="custom-password">{{ t('userCard.password.customLabel') }}</label>
+            <input
+              id="custom-password"
+              v-model="customPassword"
+              type="password"
+              autocomplete="new-password"
+              :disabled="user.provisioned"
+              :placeholder="t('userCard.password.customPlaceholder')"
+            />
+          </div>
+          <button
+            class="btn"
+            type="button"
+            :disabled="passwordBusy || customPassword.length < 8 || user.provisioned"
+            @click="setCustomPassword"
+          >
+            {{ passwordBusy ? t('common.saving') : t('userCard.password.setCustom') }}
+          </button>
+          <button
+            class="btn btn--secondary"
+            type="button"
+            :disabled="passwordBusy || user.provisioned"
+            @click="generatePassword"
+          >
+            {{ t('userCard.password.generate') }}
+          </button>
+        </div>
+      </section>
 
       <!-- Tokens -->
       <section v-if="canManage" class="section">
@@ -435,6 +531,17 @@ async function runConfirm() {
   </BaseModal>
 
   <TokenQrModal v-if="qrToken" :value="qrToken.value" :label="qrToken.label" @close="qrToken = null" />
+
+  <TokenQrModal
+    v-if="showPasswordQr && createdPassword"
+    :value="createdPassword"
+    :label="props.username"
+    :title="t('userCard.password.qrTitle')"
+    :hint="t('userCard.password.qrHint')"
+    :copied-text="t('userCard.password.copied')"
+    :copy-failed-text="t('userCard.password.copyFailed')"
+    @close="showPasswordQr = false"
+  />
 
   <ConfirmDialog
     v-if="confirmState"

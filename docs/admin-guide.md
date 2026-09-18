@@ -64,15 +64,14 @@ The search field filters the list **by username** (substring, case-insensitive).
 1. Click "Create user".
 2. Specify a username. Letters, digits and the characters `- _ . + @` are allowed.
 3. Choose the role in ntfy: "User" or "Administrator".
-4. If needed, leave the "Create and attach a personal token" checkbox enabled and
-   set a label (by default, the username).
-5. Click "Create".
+4. Click "Create".
 
-The password is generated automatically and is never displayed — it is not used,
-since login is performed via token. If a token was created, its value is shown
-**once** immediately after creation: copy it and give it to the user. After the
-window is closed, the value cannot be recovered — you can only create a new
-token.
+An ntfy password is generated automatically and shown **once** immediately after
+creation, both as text and as a QR code. Copy or scan it and give it to the user:
+it is required to sign in to ntfy clients that do not support tokens (for
+example, the iOS app). After the window is closed, the password cannot be
+recovered — it can only be reset. Access tokens are created separately on the
+user card (see 5.3).
 
 ### Deleting a user
 
@@ -96,7 +95,20 @@ actions for the user.
 The name, role in ntfy, tier and the "From ntfy configuration" flag are
 displayed.
 
-### 5.2. Access tokens
+### 5.2. ntfy password
+
+The "ntfy password" section lets you manage the password the user uses to sign in
+to ntfy clients that do not support tokens (for example, the iOS app).
+
+- **Generate password** — generates a new random password and shows it once, as
+  text and as a QR code.
+- **Set password** — enter a custom password (at least 8 characters) and click
+  "Set password".
+
+Changing the password does not affect existing access tokens. Passwords of users
+defined in the ntfy configuration (`server.yml`) cannot be changed.
+
+### 5.3. Access tokens
 
 The token table contains the token value (masked), the label, the expiration and
 information about the last access.
@@ -114,7 +126,7 @@ information about the last access.
 
 Tokens defined in the ntfy configuration cannot be deleted.
 
-### 5.3. Topic access rights
+### 5.4. Topic access rights
 
 The "Topic access rights" table shows the "topic → rights" mapping.
 
@@ -162,6 +174,7 @@ Main action types:
 | Panel login / Failed login attempt / Logout | Administrator authentication. |
 | Administrator password change | Changing the panel administrator's password. |
 | User creation / deletion | Managing ntfy accounts. |
+| ntfy password change | Changing or resetting an ntfy user's password (the value is never logged). |
 | Token creation / deletion | Managing individual tokens. |
 | Delete all tokens | Bulk deletion of tokens. |
 | Topic permission assignment / deletion | Managing ACLs. |
@@ -169,11 +182,12 @@ Main action types:
 > Token values in the log are masked — only part of the string is stored in the
 > details.
 
-## 7. Changing the administrator password
+## 7. Changing the panel administrator password
 
 Click "Change password" in the header, enter the current and new password (at
-least 8 characters) and confirm. The panel administrator's password is not
-related to ntfy user passwords.
+least 8 characters) and confirm. This changes the **panel** password only; ntfy
+user passwords are managed on the user card (see 5.2) and on the "My tokens"
+page.
 
 ## 8. Security: recommendations
 
@@ -192,7 +206,7 @@ related to ntfy user passwords.
   configuring topic permissions; tokens are not created for it.
 - **The ntfy administrator role** does not use permissions on individual topics.
 - The panel does not store ntfy user passwords: on creation the password is
-  generated and is not shown.
+  generated, shown once and passed to ntfy. It can only be reset, not recovered.
 
 ## 10. Authentication of panel users
 
@@ -207,5 +221,6 @@ tried in the configured order:
 On the first successful LDAP login, the ntfy user can be created automatically
 (with a random password and no access tokens) if `LDAP_PROVISION_NTFY_USER=true`.
 
-LDAP users cannot change their password in the panel; it is managed by the
-directory.
+LDAP users can change their **ntfy** password on the "My tokens" page (used by
+ntfy clients that do not support tokens). Their **LDAP** password is managed by
+the directory and cannot be changed in the panel.

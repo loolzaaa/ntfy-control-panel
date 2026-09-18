@@ -8,6 +8,10 @@ import { useToastStore } from '../stores/toast';
 const props = defineProps({
   value: { type: String, required: true },
   label: { type: String, default: '' },
+  title: { type: String, default: '' },
+  hint: { type: String, default: '' },
+  copiedText: { type: String, default: '' },
+  copyFailedText: { type: String, default: '' },
 });
 
 const emit = defineEmits(['close']);
@@ -40,23 +44,23 @@ watch(
 async function copy() {
   try {
     await navigator.clipboard.writeText(props.value);
-    toast.success(t('profile.copied'));
+    toast.success(props.copiedText || t('profile.copied'));
   } catch {
-    toast.error(t('profile.copyFailed'));
+    toast.error(props.copyFailedText || t('profile.copyFailed'));
   }
 }
 </script>
 
 <template>
-  <BaseModal :title="t('qr.title')" size="sm" @close="emit('close')">
+  <BaseModal :title="props.title || t('qr.title')" size="sm" @close="emit('close')">
     <div class="qr-box">
-      <img v-if="dataUrl" class="qr-box__image" :src="dataUrl" :alt="t('qr.title')" />
+      <img v-if="dataUrl" class="qr-box__image" :src="dataUrl" :alt="props.title || t('qr.title')" />
       <p v-else-if="error" class="form-error">{{ error }}</p>
       <p v-else class="muted">{{ t('common.loading') }}</p>
 
       <p v-if="props.label" class="muted" style="margin: 0">{{ props.label }}</p>
       <div class="token-value qr-box__value">{{ props.value }}</div>
-      <p class="form-hint">{{ t('qr.hint') }}</p>
+      <p class="form-hint">{{ props.hint || t('qr.hint') }}</p>
 
       <button class="btn btn--secondary btn--sm" type="button" @click="copy">
         {{ t('common.copy') }}
