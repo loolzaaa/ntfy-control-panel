@@ -1,7 +1,7 @@
 # ntfy Control Panel
 
-A web application for centralized management of users, tokens and topic access
-rights on a **ntfy** (self-hosted) push notification server.
+A web application for centralized management of users, passwords, tokens and
+topic access rights on a **ntfy** (self-hosted) push notification server.
 
 The panel does not access the ntfy database directly: all operations are
 performed through the official CLI (`ntfy user`, `ntfy token`, `ntfy access`).
@@ -16,18 +16,23 @@ the panel keeps only the panel administrator accounts and the audit log.
 - Authentication with pluggable identity providers: local panel accounts
   (bcrypt) and/or LDAP, tried in the configured order.
 - Two panel roles: administrator (full management) and user (self-service for
-  own tokens).
+  own tokens and ntfy password).
 - Configurable per-user token limit (default 4), enforced both for administrators
   and for users managing their own tokens.
-- QR code for any token for quick transfer to the mobile app.
+- QR codes for tokens and for generated passwords, for quick transfer to the
+  mobile app.
+- ntfy passwords for clients that do not support tokens (for example, the iOS
+  app): generated on user creation and shown once (text + QR), resettable or
+  settable by an administrator, and self-service for LDAP users.
 - Optional automatic creation of the ntfy user on the first LDAP login
-  (random password, no tokens).
+  (random password, no tokens); LDAP users can change their ntfy password.
 - List of ntfy users with search by name.
-- Creating a user (the password is generated automatically) with optional
-  creation of a personal token.
+- Creating a user: the password is generated automatically and shown once
+  (text + QR). Tokens are created separately on the user card.
 - Deleting a user with confirmation (along with tokens and permissions).
-- User card: role, tokens (create/delete individually and all at once),
-  topic access rights (`read-only`, `write-only`, `read-write`, `deny`).
+- User card: role, ntfy password (generate/custom), tokens (create/delete
+  individually and all at once), topic access rights (`read-only`,
+  `write-only`, `read-write`, `deny`).
 - Audit log of all operations with filtering by date, administrator, action and
   ntfy user.
 - Security: HTTPS compatibility, CSRF tokens, login attempt rate limiting,
@@ -56,21 +61,22 @@ ntfy-control-panel/
 │   │   ├── db.js            # SQLite and schema
 │   │   ├── sessionStore.js  # session store in SQLite
 │   │   ├── ntfy/            # integration with the ntfy CLI (runner, parsers, service)
-│   │   ├── routes/          # REST API (auth, users, audit)
+│   │   ├── routes/          # REST API (auth, me, users, audit)
 │   │   ├── middleware/      # auth, CSRF, error handling
-│   │   ├── services/        # administrators, audit
+│   │   ├── services/        # panel users, audit, token policy
 │   │   └── utils/           # validation, masking
 │   └── test/                # tests (node:test)
 ├── client/                  # Frontend (Vue 3 + Vite)
 │   └── src/
-│       ├── views/           # screens: login, users, audit
+│       ├── views/           # screens: login, users, profile, audit
 │       ├── components/      # modal windows, user card
 │       ├── stores/          # Pinia: auth, notifications
 │       ├── router/
 │       └── api/
 ├── docs/
 │   ├── deployment.md        # deployment guide
-│   └── admin-guide.md       # administrator guide
+│   ├── admin-guide.md       # administrator guide (EN)
+│   └── admin-guide.ru.md    # administrator guide (RU)
 ├── .env.example
 └── package.json
 ```
@@ -137,7 +143,8 @@ npm test
 ```
 
 Covered: parsing of ntfy CLI output, the integration service layer, the full
-HTTP user management cycle, CSRF protection and SPA serving.
+HTTP user management cycle (including ntfy password reset), CSRF protection and
+SPA serving.
 
 ## Environment variables
 

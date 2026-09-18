@@ -1,9 +1,10 @@
 # AGENTS.md
 
 ## Project
-ntfy Control Panel — web UI to manage ntfy users, access tokens and topic ACLs.
-The panel never touches the ntfy database directly; it shells out to the `ntfy`
-CLI. Panel state (accounts, audit log, sessions) lives in its own SQLite database.
+ntfy Control Panel — web UI to manage ntfy users, passwords, access tokens and
+topic ACLs. The panel never touches the ntfy database directly; it shells out to
+the `ntfy` CLI. Panel state (accounts, audit log, sessions) lives in its own
+SQLite database.
 
 ## Requirements
 - Node.js >= 22 (required by `ldapts`; pinned in `.nvmrc`). Linux is the only supported deployment target.
@@ -67,6 +68,23 @@ or typecheck.
 - Token lists are sorted by last access (newest first) in `ntfy/service.js`
   (`parseNtfyDate`).
 
+### ntfy passwords
+- `generatePassword()` in `ntfy/service.js` returns a 20-char unambiguous
+  alphanumeric (no `0/O/1/l/I`). ntfy user passwords exist for clients that do not
+  support tokens (e.g. the iOS app).
+- Create/reset/change all go through the CLI with the password in `NTFY_PASSWORD`
+  (`runNtfy(args, { password })`): `user add` / `user change-pass`.
+- `createUser({username, role})` returns `{username, role, password}` and does NOT
+  create tokens (token binding at creation was removed). Admin password endpoints:
+  `PUT /api/users/:username/password` (empty body → generate, `{password}` →
+  custom). Self-service: `PUT /api/me/password`, **LDAP only**
+  (`ntfy_password_not_applicable` otherwise; `ntfy_user_not_found` if the user has
+  no ntfy account).
+- Never write password values to the audit log or logs — only flags like
+  `passwordGenerated` / `generated`.
+- The QR modal (`TokenQrModal.vue`) is generalized via `title` / `hint` /
+  `copiedText` / `copyFailedText` props to also render passwords.
+
 ### Frontend
 - API base is `${import.meta.env.BASE_URL}api`; router uses
   `createWebHistory(import.meta.env.BASE_URL)`.
@@ -83,5 +101,6 @@ or typecheck.
 - On Windows dev use `npm.cmd` (PowerShell execution policy blocks `npm.ps1`).
 
 ## Docs
-Update `docs/deployment.md`, `docs/admin-guide.md` and `docs/admin-guide.ru.md`
-when behavior or configuration changes. Do not commit unless explicitly asked.
+Update `README.md`, `docs/deployment.md`, `docs/admin-guide.md` and
+`docs/admin-guide.ru.md` when behavior or configuration changes. Do not commit
+unless explicitly asked.

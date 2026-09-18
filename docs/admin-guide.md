@@ -10,10 +10,11 @@ its CLI.
 
 The panel has two roles:
 
-- **Administrator** — full access: users, tokens, topic permissions and the audit log.
-- **User** — a self-service area for own access tokens: create and delete tokens
-  (within the configured limit) and show QR codes. Administrative functionality is
-  not available.
+- **Administrator** — full access: users, passwords, tokens, topic permissions and
+  the audit log.
+- **User** — a self-service area for own access tokens (create and delete tokens
+  within the configured limit, show QR codes) and for changing the ntfy password.
+  Administrative functionality is not available.
 
 Administrators are local panel accounts. Users authenticate through an external
 identity provider (LDAP) and receive the `user` role automatically.
@@ -28,8 +29,9 @@ The session lasts for a limited time (8 hours by default). After several failed
 attempts, login is temporarily blocked.
 
 The initial administrator login and password are set during deployment (see the
-deployment guide). Change the password immediately after the first login. LDAP
-users cannot change their password in the panel — it is managed by the directory.
+deployment guide). Change the panel password immediately after the first login.
+LDAP users cannot change their LDAP password in the panel — it is managed by the
+directory — but they can change their **ntfy** password (see 5.2 and section 10).
 
 ## 3. Navigation
 
@@ -42,7 +44,8 @@ On the right side of the header are the user name, the language switcher and the
 "Log out" button; administrators additionally see "Change password".
 
 Users with the `user` role do not see the administrative sections: they get the
-"My tokens" page for managing their own access tokens.
+"My tokens" page for managing their own access tokens and for changing their ntfy
+password.
 
 ## 4. User list
 
