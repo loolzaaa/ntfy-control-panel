@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import client from '../api/client';
 import { useAuthStore } from '../stores/auth';
@@ -18,6 +18,8 @@ const ntfyUserExists = ref(true);
 const maxTokens = ref(4);
 const loading = ref(true);
 const loadError = ref(null);
+const grants = ref([]);
+const defaultAccess = ref(null);
 
 const newLabel = ref('');
 const newExpires = ref('');
@@ -53,9 +55,30 @@ async function load() {
   }
 }
 
+async function loadAccess() {
+  try {
+    const { data } = await client.get('/me/access');
+    grants.value = data.grants || [];
+    defaultAccess.value = data.defaultAccess || null;
+  } catch {
+    grants.value = [];
+    defaultAccess.value = null;
+  }
+}
+
 onMounted(() => {
   newLabel.value = auth.username;
   load();
+  loadAccess();
+});
+
+watch(tokens, (list) => {
+  if (createdToken.value && !list.some((item) => item.value === createdToken.value.value)) {
+    createdToken.value = null;
+  }
+  if (qrToken.value && !list.some((item) => item.value === qrToken.value.value)) {
+    qrToken.value = null;
+  }
 });
 
 async function createToken() {
@@ -212,6 +235,34 @@ async function runDelete() {
         </tbody>
       </table>
     </div>
+  </div>
+
+  <div class="card" style="margin-top: 16px">
+    <div class="section__head" style="padding: 16px 16px 0">
+      <h3>{{ t('profile.accessTitle') }}</h3>
+    </div>
+    <div class="table-wrap">
+      <table class="data data--compact">
+        <thead>
+          <tr>
+            <th>{{ t('profile.accessTopic') }}</th>
+            <th>{{ t('profile.accessPermission') }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="grant in grants" :key="grant.topic">
+            <td><span class="token-value">{{ grant.topic }}</span></td>
+            <td>{{ t(`permissions.${grant.permission}`) }}</td>
+          </tr>
+          <tr v-if="grants.length === 0">
+            <td colspan="2" class="empty-state">{{ t('profile.accessEmpty') }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <p v-if="defaultAccess" class="form-hint" style="padding: 0 16px 16px">
+      {{ t('profile.accessDefault', { permission: t(`permissions.${defaultAccess}`) }) }}
+    </p>
   </div>
 
   <TokenQrModal v-if="qrToken" :value="qrToken.value" :label="qrToken.label" @close="qrToken = null" />

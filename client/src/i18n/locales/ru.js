@@ -214,6 +214,11 @@ export default {
     deleted: 'Токен удалён',
     copied: 'Токен скопирован в буфер обмена',
     copyFailed: 'Не удалось скопировать токен',
+    accessTitle: 'Права доступа',
+    accessTopic: 'Топик',
+    accessPermission: 'Права',
+    accessEmpty: 'Права на топики не назначены',
+    accessDefault: 'Права по умолчанию: {permission}',
     columns: {
       token: 'Токен',
       label: 'Метка',

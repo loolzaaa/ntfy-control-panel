@@ -214,6 +214,11 @@ export default {
     deleted: 'Token deleted',
     copied: 'Token copied to clipboard',
     copyFailed: 'Failed to copy token',
+    accessTitle: 'Access rights',
+    accessTopic: 'Topic',
+    accessPermission: 'Rights',
+    accessEmpty: 'No topic permissions assigned',
+    accessDefault: 'Default rights: {permission}',
     columns: {
       token: 'Token',
       label: 'Label',

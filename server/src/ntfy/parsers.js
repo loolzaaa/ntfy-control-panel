@@ -179,9 +179,44 @@ function parseTokenAdd(stdout) {
   };
 }
 
+const MONTHS = {
+  jan: 0,
+  feb: 1,
+  mar: 2,
+  apr: 3,
+  may: 4,
+  jun: 5,
+  jul: 6,
+  aug: 7,
+  sep: 8,
+  oct: 9,
+  nov: 10,
+  dec: 11,
+};
+
+/**
+ * Parses a date printed by the ntfy CLI (Go time.RFC822, e.g. "13 Feb 23 13:33 EST").
+ * The timezone abbreviation is ignored, which is fine for sorting tokens that all
+ * come from the same server.
+ * @param {string} value
+ * @returns {number} epoch milliseconds, or 0 if it cannot be parsed
+ */
+function parseNtfyDate(value) {
+  const match = String(value || '').match(/^(\d{2}) ([A-Za-z]{3}) (\d{2}) (\d{2}):(\d{2})/);
+  if (!match) {
+    return 0;
+  }
+  const month = MONTHS[match[2].toLowerCase()];
+  if (month === undefined) {
+    return 0;
+  }
+  return Date.UTC(2000 + Number(match[3]), month, Number(match[1]), Number(match[4]), Number(match[5]));
+}
+
 module.exports = {
   parseUserList,
   parseTokenList,
   parseTokenAdd,
   parsePermissionPhrase,
+  parseNtfyDate,
 };

@@ -423,6 +423,24 @@ test('self-service tokens respect the configured limit', async () => {
   assert.equal(adminOver.data.error.code, 'token_limit_reached');
 });
 
+test('self-service shows own access rights (read-only)', async () => {
+  let login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  const csrf = login.data.csrfToken;
+
+  const grant = await api(
+    'PUT',
+    '/api/users/viewer/access',
+    { topic: 'alerts-*', permission: 'read-only' },
+    { 'x-csrf-token': csrf }
+  );
+  assert.equal(grant.status, 200);
+
+  login = await api('POST', '/api/auth/login', { username: 'viewer', password: 'viewerpass' });
+  const res = await api('GET', '/api/me/access');
+  assert.equal(res.status, 200);
+  assert.ok(res.data.grants.some((item) => item.topic === 'alerts-*' && item.permission === 'read-only'));
+});
+
 test('tokens created outside the panel are shown, cannot be added to, and can be deleted', async () => {
   // Simulate a token created directly via the ntfy CLI, above the limit.
   const cliToken = makeToken();

@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
 import ConfirmDialog from './ConfirmDialog.vue';
@@ -77,6 +77,15 @@ async function load() {
 }
 
 onMounted(load);
+
+watch(tokens, (list) => {
+  if (createdToken.value && !list.some((item) => item.value === createdToken.value.value)) {
+    createdToken.value = null;
+  }
+  if (qrToken.value && !list.some((item) => item.value === qrToken.value.value)) {
+    qrToken.value = null;
+  }
+});
 
 async function addToken() {
   tokenBusy.value = true;
@@ -295,9 +304,6 @@ async function runConfirm() {
                   <button class="btn btn--ghost btn--sm" type="button" @click="copyToken(token.value)">
                     {{ t('common.copy') }}
                   </button>
-                  <button class="btn btn--ghost btn--sm" type="button" @click="qrToken = token">
-                    {{ t('qr.button') }}
-                  </button>
                 </td>
                 <td>{{ token.label || '—' }}</td>
                 <td class="nowrap">{{ token.expires }}</td>
@@ -305,7 +311,10 @@ async function runConfirm() {
                   {{ token.lastAccess }}
                   <span v-if="token.lastOrigin" class="muted">({{ token.lastOrigin }})</span>
                 </td>
-                <td class="text-right">
+                <td class="text-right nowrap">
+                  <button class="btn btn--ghost btn--sm" type="button" @click="qrToken = token">
+                    {{ t('qr.button') }}
+                  </button>
                   <button
                     class="btn btn--ghost btn--sm"
                     type="button"

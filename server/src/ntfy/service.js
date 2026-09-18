@@ -2,7 +2,7 @@
 
 const crypto = require('node:crypto');
 const { runNtfy } = require('./runner');
-const { parseUserList, parseTokenList, parseTokenAdd } = require('./parsers');
+const { parseUserList, parseTokenList, parseTokenAdd, parseNtfyDate } = require('./parsers');
 const { notFound, AppError } = require('../errors');
 
 /**
@@ -53,7 +53,8 @@ async function deleteUser(username) {
 
 async function listTokens(username) {
   const { stdout } = await runNtfy(['token', 'list', username]);
-  return parseTokenList(stdout).filter((token) => !username || token.username === username);
+  const tokens = parseTokenList(stdout).filter((token) => !username || token.username === username);
+  return tokens.sort((a, b) => parseNtfyDate(b.lastAccess) - parseNtfyDate(a.lastAccess));
 }
 
 /**

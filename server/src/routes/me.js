@@ -27,6 +27,26 @@ router.get('/tokens', async (req, res) => {
   res.json({ tokens, ntfyUserExists, maxTokens: config.tokens.maxPerUser });
 });
 
+router.get('/access', async (req, res) => {
+  let grants = [];
+  let defaultAccess = null;
+  let ntfyUserExists = true;
+
+  try {
+    const user = await ntfy.getUser(req.user.username);
+    grants = user.grants || [];
+    defaultAccess = user.defaultAccess || null;
+  } catch (error) {
+    if (error.code === 'user_not_found') {
+      ntfyUserExists = false;
+    } else {
+      throw error;
+    }
+  }
+
+  res.json({ grants, defaultAccess, ntfyUserExists });
+});
+
 router.post('/tokens', async (req, res) => {
   const data = validate(addTokenSchema, req.body || {});
   await assertTokenLimit(req.user.username);

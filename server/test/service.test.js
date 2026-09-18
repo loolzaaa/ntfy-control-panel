@@ -95,6 +95,26 @@ test('deleteAllTokens: deletes all user tokens', async () => {
   assert.deepEqual(delCalls[0].args, ['token', 'del', 'phil', 'tk_7eevizlsiwf9yi4uxsrs83r4352o0']);
 });
 
+test('listTokens: sorts tokens by last access, newest first', async () => {
+  responder = (args) => {
+    if (args[0] === 'token' && args[1] === 'list') {
+      return {
+        stdout: [
+          'user phil',
+          '- tk_7eevizlsiwf9yi4uxsrs83r4352o0 (old), never expires, accessed from 0.0.0.0 at 01 Jan 20 10:00 UTC',
+          '- tk_3gd7d2yftt4b8ixyfe9mnmro88o76 (new), never expires, accessed from 0.0.0.0 at 05 Jun 24 18:30 UTC',
+        ].join('\n'),
+      };
+    }
+    return { stdout: '' };
+  };
+
+  const tokens = await service.listTokens('phil');
+  assert.equal(tokens.length, 2);
+  assert.equal(tokens[0].label, 'new');
+  assert.equal(tokens[1].label, 'old');
+});
+
 test('setAccess / deleteAccess: build correct arguments', async () => {
   await service.setAccess('ben', 'alerts-*', 'read-write');
   assert.deepEqual(calls[0].args, ['access', 'ben', 'alerts-*', 'read-write']);
