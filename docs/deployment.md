@@ -337,15 +337,21 @@ sudo chmod 600 /opt/ntfy-control-panel/.env
 > `COOKIE_SECURE=true` to force the flag, or `COOKIE_SECURE=false` for plain
 > HTTP (for example, local tests).
 
-### Initial administrator
+### Primary administrator
 
-On first launch, when the panel administrator table is empty:
+`BOOTSTRAP_ADMIN_USERNAME` and `BOOTSTRAP_ADMIN_PASSWORD` are **required** — the
+panel refuses to start without them.
 
-- if `BOOTSTRAP_ADMIN_PASSWORD` is set, an administrator with this password is created;
-- if the password is not set, it is generated and printed in the log **once**.
+- On first launch the primary administrator ("root") is created from these values.
+- On every subsequent start its password is synchronized with the configured
+  value; the primary password is managed **only** by configuration and cannot be
+  changed through the panel.
+- Use it to create additional local administrators in the "Administrators"
+  section and hand their credentials to other people. Additional administrators
+  can change their own password in the header.
 
-After the first login, change the panel password (the "Change password" button in
-the header).
+To change the primary ("root") password, edit `BOOTSTRAP_ADMIN_PASSWORD` and
+restart the panel.
 
 ### Authentication providers (local / LDAP)
 
@@ -545,14 +551,11 @@ sudo ufw allow 'Nginx Full'
 
 ## 10. First login
 
-Open `https://ntfy-admin.example.com` and sign in with the administrator
-credentials. If the password was generated automatically, read it from the log:
-
-```bash
-sudo journalctl -u ntfy-panel | grep -A3 "administrator account created"
-```
-
-Then change the panel password via the "Change password" button in the header.
+Open `https://ntfy-admin.example.com` and sign in with the primary administrator
+credentials from `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD`. This
+account ("root") is managed by configuration: its password cannot be changed in
+the panel. Use it to create additional local administrators in the
+"Administrators" section and hand their credentials to other people.
 
 ## 11. Updating
 
@@ -610,4 +613,5 @@ sudo journalctl -u ntfy-panel -f
 6. The ntfy password can be reset (generated or custom) in the user card, and tokens are created and deleted there (individually and all at once).
 7. Topic permissions are assigned, changed and deleted.
 8. Deleting a user proceeds with confirmation.
-9. The audit log contains all performed operations.
+9. An additional panel administrator is created, can log in, and the primary administrator cannot be deleted.
+10. The audit log contains all performed operations.

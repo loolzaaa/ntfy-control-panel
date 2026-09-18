@@ -2,12 +2,14 @@ import { createRouter, createWebHistory } from 'vue-router';
 import { useAuthStore } from '../stores/auth';
 import LoginView from '../views/LoginView.vue';
 import UsersView from '../views/UsersView.vue';
+import AdminsView from '../views/AdminsView.vue';
 import AuditView from '../views/AuditView.vue';
 import ProfileView from '../views/ProfileView.vue';
 
 const routes = [
   { path: '/login', name: 'login', component: LoginView, meta: { guest: true } },
   { path: '/', name: 'users', component: UsersView, meta: { requiresAuth: true, requiresAdmin: true } },
+  { path: '/admins', name: 'admins', component: AdminsView, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/audit', name: 'audit', component: AuditView, meta: { requiresAuth: true, requiresAdmin: true } },
   { path: '/profile', name: 'profile', component: ProfileView, meta: { requiresAuth: true } },
   { path: '/:pathMatch(.*)*', redirect: '/' },

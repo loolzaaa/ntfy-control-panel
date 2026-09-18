@@ -17,6 +17,9 @@ the panel keeps only the panel administrator accounts and the audit log.
   (bcrypt) and/or LDAP, tried in the configured order.
 - Two panel roles: administrator (full management) and user (self-service for
   own tokens and ntfy password).
+- Multiple local panel administrators: the primary "root" account is defined by
+  configuration and cannot be changed or deleted through the panel; additional
+  administrators are created from the panel and handed out.
 - Configurable per-user token limit (default 4), enforced both for administrators
   and for users managing their own tokens.
 - QR codes for tokens and for generated passwords, for quick transfer to the
@@ -61,7 +64,7 @@ ntfy-control-panel/
 │   │   ├── db.js            # SQLite and schema
 │   │   ├── sessionStore.js  # session store in SQLite
 │   │   ├── ntfy/            # integration with the ntfy CLI (runner, parsers, service)
-│   │   ├── routes/          # REST API (auth, me, users, audit)
+│   │   ├── routes/          # REST API (auth, me, users, admins, audit)
 │   │   ├── middleware/      # auth, CSRF, error handling
 │   │   ├── services/        # panel users, audit, token policy
 │   │   └── utils/           # validation, masking
@@ -97,9 +100,9 @@ npm run dev
 npm run client:dev
 ```
 
-Open http://localhost:5173. The panel administrator login and password will be
-printed in the backend log on first launch (unless `BOOTSTRAP_ADMIN_PASSWORD` is
-set).
+Open http://localhost:5173. Set `BOOTSTRAP_ADMIN_USERNAME` and
+`BOOTSTRAP_ADMIN_PASSWORD` in `.env` before starting: the panel refuses to start
+without them and creates the primary administrator from these values.
 
 ## Build and run in production
 
@@ -159,7 +162,7 @@ See [.env.example](.env.example). Key ones:
 | `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_SEARCH_BASE`, ... | LDAP provider settings |
 | `PANEL_DB` | path to the panel SQLite database |
 | `NTFY_BIN` | path to the ntfy executable |
-| `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` | initial panel administrator |
+| `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` | primary panel administrator (required; password is config-managed) |
 
 ## Documentation
 

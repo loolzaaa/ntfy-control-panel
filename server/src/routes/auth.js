@@ -45,8 +45,17 @@ function destroySession(req) {
   });
 }
 
+function isPrimaryUser(user) {
+  return Boolean(config.bootstrap.username) && user.username === config.bootstrap.username;
+}
+
 function serializeUser(user) {
-  return { username: user.username, role: user.role, source: user.source };
+  return {
+    username: user.username,
+    role: user.role,
+    source: user.source,
+    isPrimary: isPrimaryUser(user),
+  };
 }
 
 router.post('/login', loginLimiter, async (req, res) => {
@@ -97,6 +106,13 @@ router.post('/change-password', requireAuth, csrfProtection, async (req, res) =>
     throw new AppError('The password is managed externally and cannot be changed here', {
       status: 400,
       code: 'password_managed_externally',
+    });
+  }
+
+  if (isPrimaryUser(user)) {
+    throw new AppError('The primary administrator password is managed by configuration', {
+      status: 400,
+      code: 'primary_admin_password_locked',
     });
   }
 

@@ -36,13 +36,22 @@ const createUserSchema = z.object({
   role: z.enum(ROLES).default('user'),
 });
 
+const passwordField = z
+  .string()
+  .min(8, 'The password must contain at least 8 characters')
+  .max(72, 'The password must contain at most 72 characters');
+
 const ntfyPasswordSchema = z.object({
-  password: z
-    .string()
-    .min(8, 'The password must contain at least 8 characters')
-    .max(72, 'The password must contain at most 72 characters')
-    .optional()
-    .or(z.literal('')),
+  password: passwordField.optional().or(z.literal('')),
+});
+
+const panelPasswordSchema = z.object({
+  password: passwordField.optional().or(z.literal('')),
+});
+
+const createAdminSchema = z.object({
+  username: usernameSchema,
+  password: passwordField.optional().or(z.literal('')),
 });
 
 const meNtfyPasswordSchema = z
@@ -119,6 +128,8 @@ module.exports = {
   createUserSchema,
   ntfyPasswordSchema,
   meNtfyPasswordSchema,
+  createAdminSchema,
+  panelPasswordSchema,
   addTokenSchema,
   accessSchema,
   auditQuerySchema,

@@ -1,34 +1,10 @@
 'use strict';
 
-const crypto = require('node:crypto');
 const fs = require('node:fs');
 const config = require('./config');
 const { initDb, closeDb } = require('./db');
-const users = require('./services/users');
 const { createApp } = require('./app');
-
-function ensureBootstrapAdmin() {
-  if (users.countUsers() > 0) {
-    return;
-  }
-
-  const { username, password } = config.bootstrap;
-  const generated = !password;
-  const finalPassword = password || crypto.randomBytes(12).toString('base64url');
-
-  users.createLocalUser(username, finalPassword, 'admin');
-
-  if (generated) {
-    console.log('='.repeat(64));
-    console.log('Panel administrator account created:');
-    console.log(`  Username:  ${username}`);
-    console.log(`  Password: ${finalPassword}`);
-    console.log('The password is shown once. Change it after the first login.');
-    console.log('='.repeat(64));
-  } else {
-    console.log(`Administrator account "${username}" created from environment variables.`);
-  }
-}
+const { ensureBootstrapAdmin } = require('./bootstrap');
 
 function warnIfNtfyConfigUnavailable() {
   const configPath = '/etc/ntfy/server.yml';
@@ -51,7 +27,27 @@ function warnIfNtfyConfigUnavailable() {
 
 function start() {
   initDb(config.panelDb);
-  ensureBootstrapAdmin();
+
+  let bootstrap;
+  try {
+    bootstrap = ensureBootstrapAdmin();
+  } catch (error) {
+    console.error(`ERROR: ${error.message}`);
+    process.exit(1);
+  }
+
+  if (bootstrap.action === 'created') {
+    console.log(`Primary administrator "${bootstrap.username}" created from configuration.`);
+  } else if (bootstrap.action === 'password-synced') {
+    console.log(`Primary administrator "${bootstrap.username}" password synchronized with configuration.`);
+  }
+
+  if (!config.auth.providers.includes('local')) {
+    console.warn(
+      'WARNING: the "local" provider is not enabled in AUTH_PROVIDERS — the primary ' +
+        'administrator will not be able to sign in to the panel.'
+    );
+  }
 
   const app = createApp();
   const server = app.listen(config.port, config.host, () => {

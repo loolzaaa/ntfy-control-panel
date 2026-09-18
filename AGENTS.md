@@ -25,7 +25,8 @@ or typecheck.
 - `server/src/` — `config.js`, `db.js`, `app.js`, `index.js`
   - `ntfy/` — CLI runner, output parsers, high-level service
   - `auth/` — IdentityProvider interface, `providers/{local,ldap}.js`, `authenticate.js`
-  - `routes/` — `auth.js`, `me.js`, `users.js`, `audit.js`
+  - `routes/` — `auth.js`, `me.js`, `users.js`, `panelUsers.js`, `audit.js`
+  - `bootstrap.js` — primary panel administrator creation/sync from config
   - `middleware/` — auth/roles, CSRF, error handler
   - `services/` — panel users, audit, token policy
 - `client/src/` — `views/`, `components/`, `stores/`, `router/`, `i18n/`, `api/`
@@ -55,6 +56,19 @@ or typecheck.
   (`LDAP_PROVISION_NTFY_USER`).
 - `requireAuth` sets `req.user`; `requireAdmin` guards admin routes. Frontend routes
   use `meta.requiresAdmin`.
+- Primary panel administrator ("root"): `BOOTSTRAP_ADMIN_USERNAME` /
+  `BOOTSTRAP_ADMIN_PASSWORD` are REQUIRED (no defaults, no random generation).
+  `bootstrap.js` creates it on startup and **synchronizes its password from config
+  on every start**; the primary's password can never be changed through the panel
+  (`primary_admin_password_locked` on `/api/auth/change-password`,
+  `primary_admin_protected` on `/api/admins/:id/*`). Identity is the config
+  username, not a DB flag.
+- Additional local admins are managed via `/api/admins` (`panelUsers.js`,
+  admin-only): list/create/delete/reset password. Only `source='local' AND
+  role='admin'` accounts are listed/manageable; the primary cannot be deleted or
+  reset. Panel password hashing is bcrypt in `services/users.js`.
+- Auth responses (`/api/auth/login`, `/api/auth/me`) include `isPrimary` (computed
+  from config), used by the UI to hide the panel-password button.
 - ldapts gotcha: pass `tlsOptions` to the `Client` constructor ONLY for `ldaps://`.
   For `ldap://` (including StartTLS) omit it, otherwise ldapts forces TLS on the
   initial connection and plain LDAP fails with ECONNRESET. StartTLS is done via

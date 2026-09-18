@@ -17,7 +17,9 @@ The panel has two roles:
   Administrative functionality is not available.
 
 Administrators are local panel accounts. Users authenticate through an external
-identity provider (LDAP) and receive the `user` role automatically.
+identity provider (LDAP) and receive the `user` role automatically. The primary
+administrator ("root") is defined by configuration; additional local
+administrators are created from the panel (see section 7).
 
 ## 2. Logging into the panel
 
@@ -28,20 +30,22 @@ identity provider (LDAP) and receive the `user` role automatically.
 The session lasts for a limited time (8 hours by default). After several failed
 attempts, login is temporarily blocked.
 
-The initial administrator login and password are set during deployment (see the
-deployment guide). Change the panel password immediately after the first login.
-LDAP users cannot change their LDAP password in the panel — it is managed by the
-directory — but they can change their **ntfy** password (see 5.2 and section 10).
+The primary administrator login and password are set during deployment (see the
+deployment guide). LDAP users cannot change their LDAP password in the panel — it
+is managed by the directory — but they can change their **ntfy** password (see
+5.2 and section 11).
 
 ## 3. Navigation
 
 Administrators see the following sections at the top of the screen:
 
 - **Users** — the main management section.
+- **Administrators** — local panel accounts.
 - **Audit log** — the history of administrator actions.
 
 On the right side of the header are the user name, the language switcher and the
-"Log out" button; administrators additionally see "Change password".
+"Log out" button; local administrators additionally see "Change password" (hidden
+for the primary administrator, whose password is managed by configuration).
 
 Users with the `user` role do not see the administrative sections: they get the
 "My tokens" page for managing their own access tokens and for changing their ntfy
@@ -175,7 +179,8 @@ Main action types:
 | Action | Description |
 |----------|----------|
 | Panel login / Failed login attempt / Logout | Administrator authentication. |
-| Administrator password change | Changing the panel administrator's password. |
+| Administrator password change | Changing a panel administrator's own password. |
+| Panel administrator creation / deletion / password change | Managing local panel accounts. |
 | User creation / deletion | Managing ntfy accounts. |
 | ntfy password change | Changing or resetting an ntfy user's password (the value is never logged). |
 | Token creation / deletion | Managing individual tokens. |
@@ -185,14 +190,33 @@ Main action types:
 > Token values in the log are masked — only part of the string is stored in the
 > details.
 
-## 7. Changing the panel administrator password
+## 7. Panel administrators
 
-Click "Change password" in the header, enter the current and new password (at
-least 8 characters) and confirm. This changes the **panel** password only; ntfy
-user passwords are managed on the user card (see 5.2) and on the "My tokens"
-page.
+The "Administrators" section lists the local panel accounts.
 
-## 8. Security: recommendations
+- **Create administrator** — specify a username; leave the password empty to
+  generate one (shown once, with a QR code) or enter a custom password (at least
+  8 characters). Hand the credentials to the person.
+- **Password** — reset an administrator's password (generate or set a custom
+  one).
+- **Delete** — remove an administrator.
+
+The **primary administrator** ("root") is defined in the configuration
+(`BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD`) and is marked with the
+"Primary" badge. It cannot be deleted or have its password reset from the panel:
+its password is always synchronized with the configuration and changes only by
+editing the configuration and restarting the panel. It is intended to create the
+other administrators.
+
+## 8. Changing your panel password
+
+Additional (non-primary) administrators can click "Change password" in the
+header, enter the current and new password (at least 8 characters) and confirm.
+This changes the **panel** password only; ntfy user passwords are managed on the
+user card (see 5.2) and on the "My tokens" page. The primary administrator does
+not see this button — its password is managed by configuration (see section 7).
+
+## 9. Security: recommendations
 
 - Host the panel only behind HTTPS (a reverse proxy).
 - Set a persistent `SESSION_SECRET` and `COOKIE_SECURE=true`.
@@ -201,8 +225,10 @@ page.
 - Regularly review the audit log, paying attention to failed login attempts.
 - Do not transmit token values over insecure channels.
 
-## 9. Limitations
+## 10. Limitations
 
+- **The primary panel administrator** cannot be deleted or have its password
+  changed through the panel; it is managed by configuration.
 - **Users from the ntfy configuration** (`server.yml`) cannot be modified or
   deleted through the panel — they are managed by ntfy.
 - **The pseudo-user `*`** (anonymous access) is available only for viewing and
@@ -211,7 +237,7 @@ page.
 - The panel does not store ntfy user passwords: on creation the password is
   generated, shown once and passed to ntfy. It can only be reset, not recovered.
 
-## 10. Authentication of panel users
+## 11. Authentication of panel users
 
 Authentication is performed by identity providers that are enabled and ordered
 through the `AUTH_PROVIDERS` setting (for example `local,ldap`). Providers are

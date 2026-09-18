@@ -556,6 +556,75 @@ test('tokens created outside the panel are shown, cannot be added to, and can be
   assert.equal(allowed.status, 201);
 });
 
+test('panel administrators can be created, used and deleted; primary is protected', async () => {
+  let login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  assert.equal(login.status, 200);
+  assert.equal(login.data.user.isPrimary, true);
+  let headers = { 'x-csrf-token': login.data.csrfToken };
+
+  const list = await api('GET', '/api/admins');
+  assert.equal(list.status, 200);
+  const primary = list.data.admins.find((admin) => admin.username === 'admin');
+  assert.ok(primary);
+  assert.equal(primary.isPrimary, true);
+
+  const deletePrimary = await api('DELETE', `/api/admins/${primary.id}`, undefined, headers);
+  assert.equal(deletePrimary.status, 400);
+  assert.equal(deletePrimary.data.error.code, 'primary_admin_protected');
+
+  const resetPrimary = await api('PUT', `/api/admins/${primary.id}/password`, {}, headers);
+  assert.equal(resetPrimary.status, 400);
+  assert.equal(resetPrimary.data.error.code, 'primary_admin_protected');
+
+  const changeOwn = await api(
+    'POST',
+    '/api/auth/change-password',
+    { currentPassword: 'secret12345', newPassword: 'whatever-123' },
+    headers
+  );
+  assert.equal(changeOwn.status, 400);
+  assert.equal(changeOwn.data.error.code, 'primary_admin_password_locked');
+
+  const created = await api('POST', '/api/admins', { username: 'helper' }, headers);
+  assert.equal(created.status, 201);
+  assert.match(created.data.password, /^[A-HJ-NP-Za-km-z2-9]{20}$/);
+  assert.equal(created.data.admin.isPrimary, false);
+  const helperId = created.data.admin.id;
+
+  login = await api('POST', '/api/auth/login', { username: 'helper', password: created.data.password });
+  assert.equal(login.status, 200);
+  assert.equal(login.data.user.role, 'admin');
+  assert.equal(login.data.user.isPrimary, false);
+  const helperHeaders = { 'x-csrf-token': login.data.csrfToken };
+
+  const reset = await api('PUT', `/api/admins/${helperId}/password`, {}, helperHeaders);
+  assert.equal(reset.status, 200);
+  assert.match(reset.data.password, /^[A-HJ-NP-Za-km-z2-9]{20}$/);
+
+  const oldPassword = await api('POST', '/api/auth/login', {
+    username: 'helper',
+    password: created.data.password,
+  });
+  assert.equal(oldPassword.status, 401);
+
+  const newPassword = await api('POST', '/api/auth/login', {
+    username: 'helper',
+    password: reset.data.password,
+  });
+  assert.equal(newPassword.status, 200);
+
+  login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  headers = { 'x-csrf-token': login.data.csrfToken };
+  const removed = await api('DELETE', `/api/admins/${helperId}`, undefined, headers);
+  assert.equal(removed.status, 200);
+
+  const gone = await api('POST', '/api/auth/login', {
+    username: 'helper',
+    password: reset.data.password,
+  });
+  assert.equal(gone.status, 401);
+});
+
 test('SPA is served as static files, unknown API route returns 404 JSON', async () => {
   const index = await api('GET', '/');
   assert.equal(index.status, 200);

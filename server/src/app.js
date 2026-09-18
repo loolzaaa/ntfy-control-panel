@@ -15,6 +15,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const auditRoutes = require('./routes/audit');
 const meRoutes = require('./routes/me');
+const panelUserRoutes = require('./routes/panelUsers');
 
 function createApp() {
   const app = express();
@@ -80,6 +81,7 @@ function createApp() {
   appRouter.use('/api/auth', authRoutes);
   appRouter.use('/api/me', requireAuth, csrfProtection, meRoutes);
   appRouter.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
+  appRouter.use('/api/admins', requireAuth, requireAdmin, csrfProtection, panelUserRoutes);
   appRouter.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
 
   appRouter.use(apiNotFoundHandler);

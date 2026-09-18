@@ -44,6 +44,23 @@ function listUsers() {
     .map(mapRow);
 }
 
+function listLocalUsers() {
+  return getDb()
+    .prepare(
+      `SELECT ${SELECT_COLUMNS} FROM users WHERE source = 'local' AND role = 'admin' ORDER BY username`
+    )
+    .all()
+    .map(mapRow);
+}
+
+function deleteById(id) {
+  getDb().prepare('DELETE FROM users WHERE id = ?').run(id);
+}
+
+function setRole(userId, role) {
+  getDb().prepare('UPDATE users SET role = ? WHERE id = ?').run(role, userId);
+}
+
 /**
  * Creates a panel user.
  * @param {{username: string, passwordHash?: string|null, role?: string, source?: string}} input
@@ -104,6 +121,9 @@ module.exports = {
   findByUsername,
   findById,
   listUsers,
+  listLocalUsers,
+  deleteById,
+  setRole,
   createUser,
   createLocalUser,
   verifyPassword,

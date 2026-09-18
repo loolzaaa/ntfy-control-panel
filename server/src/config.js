@@ -122,7 +122,7 @@ const config = {
     maxPerUser: toInt(process.env.MAX_TOKENS_PER_USER, 4),
   },
   bootstrap: {
-    username: (process.env.BOOTSTRAP_ADMIN_USERNAME || 'admin').trim(),
+    username: (process.env.BOOTSTRAP_ADMIN_USERNAME || '').trim(),
     password: process.env.BOOTSTRAP_ADMIN_PASSWORD || '',
   },
   login: {
