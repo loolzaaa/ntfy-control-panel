@@ -672,6 +672,14 @@ table.data--compact td {
   text-align: right;
 }
 
+.row-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
 /* ---------- Notifications ---------- */
 .toast-host {
   position: fixed;

@@ -316,12 +316,14 @@ async function runDelete() {
               <span v-if="token.lastOrigin" class="muted">({{ token.lastOrigin }})</span>
             </td>
             <td class="text-right nowrap">
-              <button class="btn btn--ghost btn--sm" type="button" @click="qrToken = token">
-                {{ t('qr.button') }}
-              </button>
-              <button class="btn btn--ghost btn--sm" type="button" @click="tokenToDelete = token">
-                {{ t('common.delete') }}
-              </button>
+              <span class="row-actions">
+                <button class="btn btn--ghost btn--sm" type="button" @click="qrToken = token">
+                  {{ t('qr.button') }}
+                </button>
+                <button class="btn btn--ghost btn--sm" type="button" @click="tokenToDelete = token">
+                  {{ t('common.delete') }}
+                </button>
+              </span>
             </td>
           </tr>
           <tr v-if="tokens.length === 0">

@@ -101,24 +101,26 @@ async function runDelete() {
             <td class="hide-sm nowrap">{{ admin.createdAt }}</td>
             <td class="hide-sm nowrap">{{ admin.lastLoginAt || '—' }}</td>
             <td class="text-right nowrap">
-              <button
-                class="btn btn--secondary btn--sm"
-                type="button"
-                :disabled="admin.isPrimary"
-                :title="admin.isPrimary ? t('admins.primaryTooltip') : t('admins.resetPassword')"
-                @click="passwordAdmin = admin"
-              >
-                {{ t('admins.resetPassword') }}
-              </button>
-              <button
-                class="btn btn--danger-outline btn--sm"
-                type="button"
-                :disabled="admin.isPrimary"
-                :title="admin.isPrimary ? t('admins.primaryTooltip') : t('common.delete')"
-                @click="askDelete(admin)"
-              >
-                {{ t('common.delete') }}
-              </button>
+              <span class="row-actions">
+                <button
+                  class="btn btn--secondary btn--sm"
+                  type="button"
+                  :disabled="admin.isPrimary"
+                  :title="admin.isPrimary ? t('admins.primaryTooltip') : t('admins.resetPassword')"
+                  @click="passwordAdmin = admin"
+                >
+                  {{ t('admins.resetPassword') }}
+                </button>
+                <button
+                  class="btn btn--danger-outline btn--sm"
+                  type="button"
+                  :disabled="admin.isPrimary"
+                  :title="admin.isPrimary ? t('admins.primaryTooltip') : t('common.delete')"
+                  @click="askDelete(admin)"
+                >
+                  {{ t('common.delete') }}
+                </button>
+              </span>
             </td>
           </tr>
           <tr v-if="admins.length === 0">
