@@ -37,6 +37,14 @@ function parseCookieSecure(value) {
   return 'auto';
 }
 
+function normalizeBasePath(value) {
+  const raw = String(value === undefined || value === null ? '' : value).trim();
+  if (!raw || raw === '/') {
+    return '';
+  }
+  return `/${raw.replace(/^\/+|\/+$/g, '')}`;
+}
+
 function parseProviderList(value) {
   if (!value || !String(value).trim()) {
     return ['local'];
@@ -75,6 +83,7 @@ const config = {
   isProduction: env === 'production',
   host: process.env.HOST || '0.0.0.0',
   port: toInt(process.env.PORT, 8080),
+  basePath: normalizeBasePath(process.env.BASE_PATH),
   trustProxy: toBool(process.env.TRUST_PROXY, false),
   panelDb: process.env.PANEL_DB
     ? path.resolve(process.env.PANEL_DB)

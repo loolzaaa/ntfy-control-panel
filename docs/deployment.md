@@ -278,6 +278,10 @@ HOST=127.0.0.1
 PORT=8080
 TRUST_PROXY=true
 
+# Context path (optional). Empty means the site root.
+# Example: BASE_PATH=/ntfy-panel
+BASE_PATH=
+
 SESSION_SECRET=<insert the generated value>
 SESSION_TTL_HOURS=8
 COOKIE_SECURE=auto
@@ -354,6 +358,33 @@ Restart the panel after changing authentication settings:
 ```bash
 sudo systemctl restart ntfy-panel
 ```
+
+### Context path (optional)
+
+To serve the panel under a sub-path (for example, `https://example.com/ntfy-panel/`)
+set `BASE_PATH` in `.env`:
+
+```dotenv
+BASE_PATH=/ntfy-panel
+```
+
+`BASE_PATH` is used by the backend at runtime and by the frontend at build time,
+so it must be set **before** building and must stay the same at runtime:
+
+```bash
+cd /opt/ntfy-control-panel
+sudo npm run build
+sudo systemctl restart ntfy-panel
+```
+
+With a context path, all endpoints move under it:
+
+- panel: `https://example.com/ntfy-panel/`
+- API: `https://example.com/ntfy-panel/api/...`
+- health check: `https://example.com/ntfy-panel/healthz` (and `/healthz` at the root)
+
+If the value changes later, rebuild the frontend and restart the service. A request
+to `/` is redirected to the context path.
 
 ## 8. Create the panel systemd service
 
@@ -444,6 +475,21 @@ server {
     }
 }
 ```
+
+> If the panel is served under a context path (`BASE_PATH=/ntfy-panel`), proxy that
+> prefix instead, without a trailing slash on `proxy_pass`, so the path is passed
+> through unchanged:
+>
+> ```nginx
+> location /ntfy-panel/ {
+>     proxy_pass http://127.0.0.1:8080;
+>     proxy_http_version 1.1;
+>     proxy_set_header Host $host;
+>     proxy_set_header X-Real-IP $remote_addr;
+>     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+>     proxy_set_header X-Forwarded-Proto $scheme;
+> }
+> ```
 
 ### 9.4 Enable the sites and obtain certificates
 

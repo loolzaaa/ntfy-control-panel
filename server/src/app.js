@@ -18,6 +18,8 @@ const meRoutes = require('./routes/me');
 
 function createApp() {
   const app = express();
+  const basePath = config.basePath;
+
   app.disable('x-powered-by');
   app.set('trust proxy', config.trustProxy);
 
@@ -51,6 +53,7 @@ function createApp() {
       saveUninitialized: false,
       rolling: true,
       cookie: {
+        path: basePath || '/',
         httpOnly: true,
         sameSite: 'strict',
         secure: config.session.cookieSecure,
@@ -59,21 +62,32 @@ function createApp() {
     })
   );
 
-  app.get('/healthz', (req, res) => {
+  const healthHandler = (req, res) => {
     res.json({ status: 'ok' });
-  });
+  };
 
-  app.use('/api/auth', authRoutes);
-  app.use('/api/me', requireAuth, csrfProtection, meRoutes);
-  app.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
-  app.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
+  app.get('/healthz', healthHandler);
 
-  app.use(apiNotFoundHandler);
+  if (basePath) {
+    app.get('/', (req, res) => {
+      res.redirect(`${basePath}/`);
+    });
+  }
+
+  const appRouter = express.Router();
+
+  appRouter.get('/healthz', healthHandler);
+  appRouter.use('/api/auth', authRoutes);
+  appRouter.use('/api/me', requireAuth, csrfProtection, meRoutes);
+  appRouter.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
+  appRouter.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
+
+  appRouter.use(apiNotFoundHandler);
 
   const distDir = config.clientDistDir;
   if (fs.existsSync(distDir)) {
-    app.use(express.static(distDir, { index: false }));
-    app.use((req, res, next) => {
+    appRouter.use(express.static(distDir, { index: false }));
+    appRouter.use((req, res, next) => {
       if (req.method !== 'GET' && req.method !== 'HEAD') {
         return next();
       }
@@ -83,6 +97,8 @@ function createApp() {
       return res.sendFile(path.join(distDir, 'index.html'));
     });
   }
+
+  app.use(basePath || '/', appRouter);
 
   app.use(errorHandler);
   return app;

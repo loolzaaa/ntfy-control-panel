@@ -105,6 +105,31 @@ npm start              # starts the backend, serves the API and the SPA static f
 
 For more details, see [docs/deployment.md](docs/deployment.md).
 
+## Context path
+
+The panel can be served under a sub-path (for example `/ntfy-panel/`) via a single
+`BASE_PATH` setting shared by the backend and the frontend:
+
+```dotenv
+BASE_PATH=/ntfy-panel
+```
+
+- The backend reads it at runtime, the frontend at build time. Set it before
+  building and keep the same value at runtime:
+  ```bash
+  npm run build
+  npm start
+  ```
+- The value is normalized (`ntfy-panel`, `/ntfy-panel`, `/ntfy-panel/` all become
+  `/ntfy-panel`). Empty or `/` means the site root.
+- Endpoints move under the path: panel `/ntfy-panel/`, API `/ntfy-panel/api/...`,
+  health `/ntfy-panel/healthz` (and `/healthz` at the root); `/` redirects to the
+  context path.
+- In development the Vite dev server and its proxy use the same value.
+
+> If the frontend is built without `BASE_PATH` while the backend runs with it (or
+> vice versa), assets or API calls will 404. Always use the same value for both.
+
 ## Tests
 
 ```bash
@@ -121,6 +146,7 @@ See [.env.example](.env.example). Key ones:
 | Variable | Purpose |
 |------------|------------|
 | `SESSION_SECRET` | session cookie secret (required in production) |
+| `BASE_PATH` | context path the panel is served under (empty = root) |
 | `AUTH_PROVIDERS` | ordered list of active providers (`local`, `ldap`) |
 | `MAX_TOKENS_PER_USER` | maximum number of tokens per ntfy user (default 4) |
 | `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_SEARCH_BASE`, ... | LDAP provider settings |
