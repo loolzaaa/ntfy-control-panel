@@ -63,8 +63,10 @@ function mask(token) {
   return token.length > 12 ? `${token.slice(0, 8)}…${token.slice(-4)}` : `${token.slice(0, 4)}***`;
 }
 
-async function load() {
-  loading.value = true;
+async function load({ silent = false } = {}) {
+  if (!silent) {
+    loading.value = true;
+  }
   loadError.value = null;
   try {
     const { data } = await client.get(endpoint.value);
@@ -77,7 +79,9 @@ async function load() {
   } catch (err) {
     loadError.value = err;
   } finally {
-    loading.value = false;
+    if (!silent) {
+      loading.value = false;
+    }
   }
 }
 
@@ -103,7 +107,7 @@ async function addToken() {
     createdToken.value = data.token;
     newTokenExpires.value = '';
     toast.success(t('userCard.tokens.created'));
-    await load();
+    await load({ silent: true });
     emit('changed');
   } catch (err) {
     toast.error(errText(err));
@@ -175,7 +179,7 @@ function askDeleteToken(token) {
         qrToken.value = null;
       }
       toast.success(t('userCard.tokens.deleted'));
-      await load();
+      await load({ silent: true });
       emit('changed');
     },
   };
@@ -191,7 +195,7 @@ function askDeleteAllTokens() {
       createdToken.value = null;
       qrToken.value = null;
       toast.success(t('userCard.tokens.deleteAllDone', { count: data.count }));
-      await load();
+      await load({ silent: true });
       emit('changed');
     },
   };
@@ -206,7 +210,7 @@ async function addAccess() {
     });
     toast.success(t('userCard.access.assigned'));
     newTopic.value = '';
-    await load();
+    await load({ silent: true });
     emit('changed');
   } catch (err) {
     toast.error(errText(err));
@@ -219,11 +223,11 @@ async function changePermission(grant, permission) {
   try {
     await client.put(`${endpoint.value}/access`, { topic: grant.topic, permission });
     toast.success(t('userCard.access.updated'));
-    await load();
+    await load({ silent: true });
     emit('changed');
   } catch (err) {
     toast.error(errText(err));
-    await load();
+    await load({ silent: true });
   }
 }
 
@@ -235,7 +239,7 @@ function askDeleteAccess(grant) {
     run: async () => {
       await client.delete(`${endpoint.value}/access`, { params: { topic: grant.topic } });
       toast.success(t('userCard.access.deleted'));
-      await load();
+      await load({ silent: true });
       emit('changed');
     },
   };
