@@ -223,6 +223,24 @@ a {
   margin-bottom: 16px;
 }
 
+.filter-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.filter-grid .field {
+  flex: 1 1 180px;
+  min-width: 160px;
+  margin-bottom: 0;
+}
+
+.filter-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 14px;
+}
+
 /* ---------- Buttons ---------- */
 .btn {
   display: inline-flex;
@@ -274,6 +292,18 @@ a {
 .btn--danger:hover:not(:disabled) {
   background: var(--color-danger-bg-hover);
   box-shadow: 0 0 0 3px var(--color-danger-soft);
+}
+
+.btn--danger-outline {
+  background: transparent;
+  color: var(--color-danger);
+  border-color: var(--color-danger);
+}
+
+.btn--danger-outline:hover:not(:disabled) {
+  background: var(--color-danger-soft);
+  border-color: var(--color-danger);
+  box-shadow: none;
 }
 
 .btn--ghost {
@@ -357,8 +387,20 @@ select:focus,
 textarea:focus {
   outline: none;
   border-color: var(--color-primary);
-  background: var(--color-surface);
+  background-color: var(--color-surface);
   box-shadow: 0 0 0 3px var(--color-primary-soft);
+}
+
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  padding-right: 34px;
+  background-color: var(--color-input-bg);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%238ba59d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
 }
 
 .checkbox {
@@ -422,10 +464,46 @@ table.data tbody tr.clickable {
   cursor: pointer;
 }
 
+table.data select {
+  width: auto;
+  min-width: 140px;
+  padding: 5px 30px 5px 10px;
+  font-size: 13px;
+}
+
+table.data--compact th,
+table.data--compact td {
+  padding: 8px 14px;
+}
+
 .empty-state {
   padding: 40px 20px;
   text-align: center;
   color: var(--color-muted);
+}
+
+.loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 40px 20px;
+  color: var(--color-muted);
+}
+
+.spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-border-strong);
+  border-top-color: var(--color-primary);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* ---------- Badges ---------- */

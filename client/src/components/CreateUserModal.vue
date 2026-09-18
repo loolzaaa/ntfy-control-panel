@@ -2,6 +2,7 @@
 import { computed, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import BaseModal from './BaseModal.vue';
+import TokenQrModal from './TokenQrModal.vue';
 import client from '../api/client';
 import { useToastStore } from '../stores/toast';
 import { useErrorText } from '../composables/useErrorText';
@@ -20,6 +21,7 @@ const labelTouched = ref(false);
 const apiError = ref(null);
 const busy = ref(false);
 const result = ref(null);
+const showQr = ref(false);
 
 const errorText = computed(() => errText(apiError.value));
 
@@ -44,9 +46,14 @@ async function submit() {
       tokenLabel: createToken.value ? tokenLabel.value.trim() || username.value.trim() : '',
     };
     const { data } = await client.post('/users', payload);
-    result.value = data;
     toast.success(t('createUser.created', { name: data.user.name }));
     emit('created', data);
+
+    if (data.token) {
+      result.value = data;
+    } else {
+      emit('close');
+    }
   } catch (err) {
     apiError.value = err;
   } finally {
@@ -115,11 +122,15 @@ async function copyToken() {
       <p>{{ t('createUser.created', { name: result.user.name }) }}</p>
 
       <div v-if="result.token" class="card" style="padding: 16px; margin-top: 12px">
-        <p class="muted" style="margin-top: 0">{{ t('createUser.tokenWarning') }}</p>
         <div class="token-value">{{ result.token.value }}</div>
-        <button class="btn btn--secondary btn--sm" type="button" style="margin-top: 12px" @click="copyToken">
-          {{ t('createUser.copyToken') }}
-        </button>
+        <div style="display: flex; gap: 8px; margin-top: 12px">
+          <button class="btn btn--secondary btn--sm" type="button" @click="copyToken">
+            {{ t('createUser.copyToken') }}
+          </button>
+          <button class="btn btn--secondary btn--sm" type="button" @click="showQr = true">
+            {{ t('qr.button') }}
+          </button>
+        </div>
       </div>
     </template>
 
@@ -135,4 +146,11 @@ async function copyToken() {
       <button v-else class="btn" type="button" @click="emit('close')">{{ t('createUser.done') }}</button>
     </template>
   </BaseModal>
+
+  <TokenQrModal
+    v-if="showQr && result && result.token"
+    :value="result.token.value"
+    :label="result.token.label"
+    @close="showQr = false"
+  />
 </template>

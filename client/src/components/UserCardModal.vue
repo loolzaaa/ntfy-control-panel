@@ -258,7 +258,6 @@ async function runConfirm() {
         </p>
 
         <div v-if="createdToken" class="card" style="padding: 14px; margin-bottom: 14px">
-          <p class="muted" style="margin: 0 0 8px">{{ t('userCard.tokens.createdWarning') }}</p>
           <div class="token-value">{{ createdToken.value }}</div>
           <div style="display: flex; gap: 8px; margin-top: 10px">
             <button class="btn btn--secondary btn--sm" type="button" @click="copyToken(createdToken.value)">
@@ -359,7 +358,7 @@ async function runConfirm() {
           </div>
 
           <div class="table-wrap">
-            <table class="data">
+            <table class="data data--compact">
               <thead>
                 <tr>
                   <th>{{ t('userCard.access.topic') }}</th>

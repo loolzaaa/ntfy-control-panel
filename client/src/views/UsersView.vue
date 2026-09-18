@@ -91,7 +91,10 @@ async function runDelete() {
   </div>
 
   <div class="card">
-    <div v-if="loading" class="empty-state">{{ t('common.loading') }}</div>
+    <div v-if="loading" class="loading-state">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>{{ t('common.loading') }}</span>
+    </div>
     <div v-else-if="errorText" class="empty-state">{{ errorText }}</div>
     <div v-else class="table-wrap">
       <table class="data">
@@ -125,11 +128,8 @@ async function runDelete() {
               <span v-else class="muted">{{ t('users.sourceManual') }}</span>
             </td>
             <td class="text-right nowrap" @click.stop>
-              <button class="btn btn--secondary btn--sm" type="button" @click="openUser(user)">
-                {{ t('common.open') }}
-              </button>
               <button
-                class="btn btn--ghost btn--sm"
+                class="btn btn--danger-outline btn--sm"
                 type="button"
                 :disabled="user.anonymous || user.provisioned"
                 :title="user.provisioned ? t('users.provisionedTooltip') : t('users.deleteTooltip')"

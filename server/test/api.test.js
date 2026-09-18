@@ -310,6 +310,33 @@ test('full user lifecycle over the HTTP API', async () => {
   }
 });
 
+test('audit log can be filtered by ntfy user', async () => {
+  await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+
+  const res = await api('GET', '/api/audit?targetUser=alice&pageSize=100');
+  assert.equal(res.status, 200);
+  assert.ok(res.data.items.length > 0);
+  for (const item of res.data.items) {
+    assert.ok(item.targetUser && item.targetUser.includes('alice'));
+  }
+});
+
+test('user list is sorted by username', async () => {
+  const login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
+  const headers = { 'x-csrf-token': login.data.csrfToken };
+
+  await api('POST', '/api/users', { username: 'zeta', createToken: false }, headers);
+  await api('POST', '/api/users', { username: 'alpha', createToken: false }, headers);
+
+  const res = await api('GET', '/api/users');
+  assert.equal(res.status, 200);
+
+  const names = res.data.users.map((user) => user.name).filter((name) => name !== '*');
+  const sorted = [...names].sort((a, b) => a.localeCompare(b, undefined, { sensitivity: 'base' }));
+  assert.deepEqual(names, sorted);
+  assert.ok(names.indexOf('alpha') < names.indexOf('zeta'));
+});
+
 test('CSRF protection: mutation without token is rejected', async () => {
   const login = await api('POST', '/api/auth/login', { username: 'admin', password: 'secret12345' });
   assert.equal(login.status, 200);

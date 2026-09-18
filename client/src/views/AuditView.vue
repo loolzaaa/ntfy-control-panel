@@ -152,16 +152,26 @@ function formatDetails(details) {
   </div>
 
   <div class="card" style="padding: 16px; margin-bottom: 16px">
-    <div class="toolbar" style="margin-bottom: 0">
-      <div class="field" style="margin-bottom: 0">
+    <div class="filter-grid">
+      <div class="field">
         <label for="filter-from">{{ t('audit.from') }}</label>
-        <input id="filter-from" v-model="filters.from" type="datetime-local" />
+        <input
+          id="filter-from"
+          v-model="filters.from"
+          type="datetime-local"
+          @keyup.enter="applyFilters"
+        />
       </div>
-      <div class="field" style="margin-bottom: 0">
+      <div class="field">
         <label for="filter-to">{{ t('audit.to') }}</label>
-        <input id="filter-to" v-model="filters.to" type="datetime-local" />
+        <input
+          id="filter-to"
+          v-model="filters.to"
+          type="datetime-local"
+          @keyup.enter="applyFilters"
+        />
       </div>
-      <div class="field" style="margin-bottom: 0">
+      <div class="field">
         <label for="filter-admin">{{ t('audit.admin') }}</label>
         <input
           id="filter-admin"
@@ -169,12 +179,13 @@ function formatDetails(details) {
           type="text"
           list="admin-options"
           :placeholder="t('common.any')"
+          @keyup.enter="applyFilters"
         />
         <datalist id="admin-options">
           <option v-for="admin in filterOptions.admins" :key="admin" :value="admin" />
         </datalist>
       </div>
-      <div class="field" style="margin-bottom: 0">
+      <div class="field">
         <label for="filter-action">{{ t('audit.action') }}</label>
         <select id="filter-action" v-model="filters.action">
           <option value="">{{ t('audit.allActions') }}</option>
@@ -183,15 +194,18 @@ function formatDetails(details) {
           </option>
         </select>
       </div>
-      <div class="field" style="margin-bottom: 0">
+      <div class="field">
         <label for="filter-target">{{ t('audit.targetUser') }}</label>
         <input
           id="filter-target"
           v-model="filters.targetUser"
           type="text"
           :placeholder="t('common.any')"
+          @keyup.enter="applyFilters"
         />
       </div>
+    </div>
+    <div class="filter-actions">
       <button class="btn" type="button" @click="applyFilters">{{ t('audit.apply') }}</button>
       <button class="btn btn--secondary" type="button" @click="resetFilters">
         {{ t('audit.reset') }}
@@ -200,7 +214,10 @@ function formatDetails(details) {
   </div>
 
   <div class="card">
-    <div v-if="loading" class="empty-state">{{ t('common.loading') }}</div>
+    <div v-if="loading" class="loading-state">
+      <span class="spinner" aria-hidden="true"></span>
+      <span>{{ t('common.loading') }}</span>
+    </div>
     <div v-else-if="errorText" class="empty-state">{{ errorText }}</div>
     <template v-else>
       <div class="table-wrap">

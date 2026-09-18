@@ -26,13 +26,24 @@ function serializeUser(user) {
 
 function assertManageable(username) {
   if (!username || username === '*') {
-    throw forbidden('Managing the anonymous user "*" is not available');
+    throw forbidden('Managing the anonymous "*" user is not available');
   }
+}
+
+function compareUsers(a, b) {
+  if (a.name === '*') {
+    return 1;
+  }
+  if (b.name === '*') {
+    return -1;
+  }
+  return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
 }
 
 router.get('/', async (req, res) => {
   const query = typeof req.query.q === 'string' ? req.query.q.trim().toLowerCase() : '';
   let users = await ntfy.listUsers();
+  users.sort(compareUsers);
   if (query) {
     users = users.filter((user) => user.name.toLowerCase().includes(query));
   }
