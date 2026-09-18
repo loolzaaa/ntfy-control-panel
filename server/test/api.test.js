@@ -168,9 +168,14 @@ childProcess.execFile = (bin, args, options, callback) => {
 };
 
 // --- Application startup -----------------------------------------------------
+const config = require('../src/config');
 const { initDb, closeDb } = require('../src/db');
 const users = require('../src/services/users');
 const { createApp } = require('../src/app');
+
+const distDir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-dist-'));
+fs.writeFileSync(path.join(distDir, 'index.html'), '<!doctype html><html><body>panel</body></html>');
+config.clientDistDir = distDir;
 
 initDb(dbPath);
 users.createLocalUser('admin', 'secret12345', 'admin');
@@ -217,6 +222,7 @@ test.after(() => {
     server.close();
   }
   closeDb();
+  fs.rmSync(distDir, { recursive: true, force: true });
   for (const suffix of ['', '-wal', '-shm']) {
     try {
       fs.rmSync(dbPath + suffix, { force: true });

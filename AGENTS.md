@@ -6,13 +6,13 @@ The panel never touches the ntfy database directly; it shells out to the `ntfy`
 CLI. Panel state (accounts, audit log, sessions) lives in its own SQLite database.
 
 ## Requirements
-- Node.js >= 22 (required by `ldapts`). Linux is the only supported deployment target.
+- Node.js >= 22 (required by `ldapts`; pinned in `.nvmrc`). Linux is the only supported deployment target.
 - Backend is CommonJS (`server/`); frontend is ESM (`client/`).
 
 ## Commands
 - `npm run install:all` — install backend + frontend dependencies
 - `npm run build` — build the frontend into `client/dist` (needed before `npm start`)
-- `npm test` — Node test runner (`node --test`)
+- `npm test` — Node test runner (`node --test`); self-contained, no prior build needed
 - `npm run dev` — backend with watch (`:8080`)
 - `npm run client:dev` — Vite dev server (`:5173`, proxies to `:8080`)
 - `npm start` — production backend (serves API + `client/dist`)
