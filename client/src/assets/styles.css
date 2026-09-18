@@ -646,6 +646,20 @@ table.data--compact td {
   color: var(--color-primary-hover);
 }
 
+.token-value--copy {
+  padding: 0;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+  text-decoration: underline dotted;
+  text-underline-offset: 3px;
+}
+
+.token-value--copy:hover {
+  color: var(--color-primary);
+}
+
 .muted {
   color: var(--color-muted);
 }

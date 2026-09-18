@@ -400,9 +400,13 @@ async function runConfirm() {
             <tbody>
               <tr v-for="token in tokens" :key="token.value">
                 <td>
-                  <span class="token-value">{{ mask(token.value) }}</span>
-                  <button class="btn btn--ghost btn--sm" type="button" @click="copyToken(token.value)">
-                    {{ t('common.copy') }}
+                  <button
+                    class="token-value token-value--copy"
+                    type="button"
+                    :title="t('common.copy')"
+                    @click="copyToken(token.value)"
+                  >
+                    {{ mask(token.value) }}
                   </button>
                 </td>
                 <td>{{ token.label || '—' }}</td>
