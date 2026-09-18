@@ -94,6 +94,12 @@ async function runDelete() {
   const token = tokenToDelete.value;
   try {
     await client.delete(`/me/tokens/${encodeURIComponent(token.value)}`);
+    if (createdToken.value && createdToken.value.value === token.value) {
+      createdToken.value = null;
+    }
+    if (qrToken.value && qrToken.value.value === token.value) {
+      qrToken.value = null;
+    }
     toast.success(t('profile.deleted'));
     tokenToDelete.value = null;
     await load();

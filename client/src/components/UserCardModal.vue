@@ -117,6 +117,12 @@ function askDeleteToken(token) {
     confirmText: t('common.delete'),
     run: async () => {
       await client.delete(`${endpoint.value}/tokens/${encodeURIComponent(token.value)}`);
+      if (createdToken.value && createdToken.value.value === token.value) {
+        createdToken.value = null;
+      }
+      if (qrToken.value && qrToken.value.value === token.value) {
+        qrToken.value = null;
+      }
       toast.success(t('userCard.tokens.deleted'));
       await load();
       emit('changed');
@@ -131,6 +137,8 @@ function askDeleteAllTokens() {
     confirmText: t('userCard.tokens.deleteAll'),
     run: async () => {
       const { data } = await client.delete(`${endpoint.value}/tokens`);
+      createdToken.value = null;
+      qrToken.value = null;
       toast.success(t('userCard.tokens.deleteAllDone', { count: data.count }));
       await load();
       emit('changed');
