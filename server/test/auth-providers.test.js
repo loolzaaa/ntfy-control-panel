@@ -43,14 +43,16 @@ const ldapSettings = {
 const ALICE_DN = 'uid=alice,ou=people,dc=example,dc=com';
 
 function makeFakeClient(behavior = {}) {
-  const calls = { binds: [], searches: [], unbinds: 0, startTls: 0 };
+  const calls = { binds: [], searches: [], unbinds: 0, startTls: 0, options: [], startTlsOptions: null };
 
   class FakeClient {
     constructor(options) {
       this.options = options;
+      calls.options.push(options);
     }
-    async startTLS() {
+    async startTLS(options) {
       calls.startTls += 1;
+      calls.startTlsOptions = options;
     }
     async bind(dn, password) {
       calls.binds.push({ dn, password });
@@ -178,6 +180,59 @@ test('LDAP search filter escapes the username', async () => {
   await provider.authenticate({ username: 'a*b(c)', password: 'x' });
 
   assert.equal(calls.searches[0].options.filter, '(uid=a\\2ab\\28c\\29)');
+});
+
+test('plain ldap:// does not force TLS on the connection', async () => {
+  const { FakeClient, calls } = makeFakeClient({ entries: [aliceEntry] });
+  const provider = createLdapProvider(
+    { ...ldapSettings, url: 'ldap://ldap.example.com:389', startTls: false },
+    { Client: FakeClient }
+  );
+
+  await provider.authenticate({ username: 'alice', password: 'userpass' });
+
+  assert.equal(calls.options[0].tlsOptions, undefined);
+  assert.equal(calls.startTls, 0);
+});
+
+test('ldaps:// passes TLS options to the connection', async () => {
+  const { FakeClient, calls } = makeFakeClient({ entries: [aliceEntry] });
+  const provider = createLdapProvider(
+    { ...ldapSettings, url: 'ldaps://ldap.example.com:636', startTls: false },
+    { Client: FakeClient }
+  );
+
+  await provider.authenticate({ username: 'alice', password: 'userpass' });
+
+  assert.deepEqual(calls.options[0].tlsOptions, { rejectUnauthorized: true });
+  assert.equal(calls.startTls, 0);
+});
+
+test('ldap:// with StartTLS connects plain first, then upgrades', async () => {
+  const { FakeClient, calls } = makeFakeClient({ entries: [aliceEntry] });
+  const provider = createLdapProvider(
+    { ...ldapSettings, url: 'ldap://ldap.example.com:389', startTls: true, tlsRejectUnauthorized: false },
+    { Client: FakeClient }
+  );
+
+  await provider.authenticate({ username: 'alice', password: 'userpass' });
+
+  assert.equal(calls.options[0].tlsOptions, undefined);
+  assert.ok(calls.startTls >= 1);
+  assert.deepEqual(calls.startTlsOptions, { rejectUnauthorized: false });
+});
+
+test('ldaps:// with StartTLS ignores StartTLS', async () => {
+  const { FakeClient, calls } = makeFakeClient({ entries: [aliceEntry] });
+  const provider = createLdapProvider(
+    { ...ldapSettings, url: 'ldaps://ldap.example.com:636', startTls: true },
+    { Client: FakeClient }
+  );
+
+  await provider.authenticate({ username: 'alice', password: 'userpass' });
+
+  assert.equal(calls.startTls, 0);
+  assert.deepEqual(calls.options[0].tlsOptions, { rejectUnauthorized: true });
 });
 
 test('providers are tried in order and the first match wins', async () => {

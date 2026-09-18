@@ -370,8 +370,11 @@ LDAP_ROLE=user
   accounts can be administrators.
 - With `LDAP_PROVISION_NTFY_USER=true`, the ntfy user is created automatically on
   the first LDAP login (with a random password and no tokens).
-- Use `LDAP_STARTTLS=true` for StartTLS instead of `ldaps://`; set
-  `LDAP_TLS_REJECT_UNAUTHORIZED=false` only for self-signed certificates.
+- Connection mode is chosen by the URL and `LDAP_STARTTLS`:
+  - plain: `LDAP_URL=ldap://ldap.example.com:389`, `LDAP_STARTTLS=false`;
+  - StartTLS: `LDAP_URL=ldap://ldap.example.com:389`, `LDAP_STARTTLS=true`;
+  - TLS: `LDAP_URL=ldaps://ldap.example.com:636` (StartTLS is ignored).
+- Set `LDAP_TLS_REJECT_UNAUTHORIZED=false` only for self-signed certificates.
 - The panel relies on the ntfy CLI reading the default `/etc/ntfy/server.yml`, so
   the panel user must be able to read it (step 4).
 - If LDAP is enabled but `LDAP_URL`, `LDAP_BIND_DN` or `LDAP_SEARCH_BASE` is

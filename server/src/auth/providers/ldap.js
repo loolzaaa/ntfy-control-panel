@@ -27,6 +27,13 @@ function escapeFilterValue(value) {
   });
 }
 
+function isLdapsUrl(url) {
+  return String(url || '')
+    .trim()
+    .toLowerCase()
+    .startsWith('ldaps://');
+}
+
 function isInvalidCredentials(error) {
   return Boolean(error) && (error.name === 'InvalidCredentialsError' || error.code === INVALID_CREDENTIALS_CODE);
 }
@@ -51,28 +58,50 @@ function firstAttribute(entry, name) {
  * Flow: bind with the service account, search for the user, then bind again
  * with the user's own DN and password to verify the credentials.
  *
+ * Connection modes:
+ * - `ldap://`               plain connection;
+ * - `ldap://` + StartTLS    plain connection upgraded via StartTLS;
+ * - `ldaps://`              TLS from the start (StartTLS is ignored).
+ *
  * @param {object} settings
  * @param {{Client?: Function}} [deps] injectable LDAP client (for tests)
  * @returns {import('./index').IdentityProvider}
  */
 function createLdapProvider(settings, deps = {}) {
   const ClientCtor = deps.Client || Client;
-  const tlsOptions = { rejectUnauthorized: settings.tlsRejectUnauthorized };
+  const isLdaps = isLdapsUrl(settings.url);
+  const useStartTls = Boolean(settings.startTls) && !isLdaps;
+
+  if (settings.startTls && isLdaps) {
+    console.warn(
+      '[auth] LDAP_STARTTLS is ignored because LDAP_URL uses ldaps:// (TLS is already enabled).'
+    );
+  }
+
+  function tlsOptions() {
+    return { rejectUnauthorized: settings.tlsRejectUnauthorized };
+  }
 
   function buildClient() {
-    return new ClientCtor({
+    const options = {
       url: settings.url,
       timeout: settings.connectTimeoutMs,
       connectTimeout: settings.connectTimeoutMs,
-      tlsOptions,
-    });
+    };
+    // Only ldaps:// should force TLS on the initial connection. For ldap:// the
+    // connection must stay plain; passing tlsOptions here would make ldapts
+    // treat it as secure and attempt a TLS handshake (causing ECONNRESET).
+    if (isLdaps) {
+      options.tlsOptions = tlsOptions();
+    }
+    return new ClientCtor(options);
   }
 
   async function verifyUserBind(dn, password) {
     const client = buildClient();
     try {
-      if (settings.startTls) {
-        await client.startTLS(tlsOptions);
+      if (useStartTls) {
+        await client.startTLS(tlsOptions());
       }
       await client.bind(dn, password);
     } catch (error) {
@@ -98,8 +127,8 @@ function createLdapProvider(settings, deps = {}) {
       const client = buildClient();
       let entry;
       try {
-        if (settings.startTls) {
-          await client.startTLS(tlsOptions);
+        if (useStartTls) {
+          await client.startTLS(tlsOptions());
         }
         try {
           await client.bind(settings.bindDn, settings.bindPassword);
@@ -150,4 +179,4 @@ function createLdapProvider(settings, deps = {}) {
   };
 }
 
-module.exports = { createLdapProvider, escapeFilterValue };
+module.exports = { createLdapProvider, escapeFilterValue, isLdapsUrl };
