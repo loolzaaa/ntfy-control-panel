@@ -17,17 +17,7 @@ function serialize(task) {
 }
 
 function buildEnv(extra = {}) {
-  const env = { ...process.env, ...extra };
-  if (config.ntfy.configFile) {
-    env.NTFY_CONFIG_FILE = config.ntfy.configFile;
-  }
-  if (config.ntfy.authFile) {
-    env.NTFY_AUTH_FILE = config.ntfy.authFile;
-  }
-  if (config.ntfy.baseUrl) {
-    env.NTFY_BASE_URL = config.ntfy.baseUrl;
-  }
-  return env;
+  return { ...process.env, ...extra };
 }
 
 function translateCliError(stderr) {

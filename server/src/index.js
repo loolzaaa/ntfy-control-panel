@@ -30,17 +30,22 @@ function ensureBootstrapAdmin() {
   }
 }
 
-function warnIfNtfyConfigUnreadable() {
-  const configPath = config.ntfy.configFile || '/etc/ntfy/server.yml';
+function warnIfNtfyConfigUnavailable() {
+  const configPath = '/etc/ntfy/server.yml';
   try {
-    if (fs.existsSync(configPath)) {
-      fs.accessSync(configPath, fs.constants.R_OK);
-    }
+    fs.accessSync(configPath, fs.constants.R_OK);
   } catch {
-    console.warn(
-      `WARNING: the panel cannot read the ntfy config file (${configPath}) — ntfy CLI ` +
-        'commands will fail. Add the panel user to the ntfy group or grant read access.'
-    );
+    if (fs.existsSync(configPath)) {
+      console.warn(
+        `WARNING: the panel cannot read the ntfy config file (${configPath}) — ntfy CLI ` +
+          'commands will fail. Add the panel user to the ntfy group or grant read access.'
+      );
+    } else {
+      console.warn(
+        `WARNING: the ntfy config file (${configPath}) was not found — ntfy CLI commands ` +
+          'may fail to locate the user database.'
+      );
+    }
   }
 }
 
@@ -53,18 +58,12 @@ function start() {
     console.log(`ntfy control panel started: http://${config.host}:${config.port}`);
     console.log(`Active authentication providers: ${config.auth.providers.join(', ')}`);
 
-    warnIfNtfyConfigUnreadable();
+    warnIfNtfyConfigUnavailable();
 
     if (config.session.secretWasGenerated) {
       console.warn(
         'WARNING: SESSION_SECRET is not set — a temporary key is being used. ' +
           'Sessions will be reset when the panel restarts.'
-      );
-    }
-    if (!config.ntfy.configFile && !config.ntfy.authFile) {
-      console.warn(
-        'WARNING: NTFY_CONFIG_FILE and NTFY_AUTH_FILE are not set — ntfy CLI commands ' +
-          'may not find the user database.'
       );
     }
   });

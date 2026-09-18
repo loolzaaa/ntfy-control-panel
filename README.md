@@ -152,8 +152,6 @@ See [.env.example](.env.example). Key ones:
 | `LDAP_URL`, `LDAP_BIND_DN`, `LDAP_SEARCH_BASE`, ... | LDAP provider settings |
 | `PANEL_DB` | path to the panel SQLite database |
 | `NTFY_BIN` | path to the ntfy executable |
-| `NTFY_CONFIG_FILE` | path to the ntfy `server.yml` |
-| `NTFY_AUTH_FILE` | alternatively — path to the ntfy `user.db` |
 | `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` | initial panel administrator |
 
 ## Documentation

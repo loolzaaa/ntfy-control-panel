@@ -246,7 +246,7 @@ export default {
     ntfy_auth_file_missing:
       'Файл базы ntfy (auth-file) не найден. Запустите сервер ntfy хотя бы один раз.',
     ntfy_auth_unconfigured:
-      'Не задан auth-file или database-url для ntfy. Проверьте настройки панели.',
+      'CLI ntfy не смог найти базу пользователей. Проверьте, что /etc/ntfy/server.yml существует, доступен на чтение и содержит auth-file (или database-url).',
     ntfy_config_permission:
       'Панель не может прочитать конфигурационный файл ntfy (server.yml). Выдайте пользователю панели права на чтение.',
     ntfy_timeout: 'Превышено время ожидания выполнения команды ntfy',

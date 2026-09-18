@@ -97,9 +97,6 @@ const config = {
   },
   ntfy: {
     bin: process.env.NTFY_BIN || 'ntfy',
-    configFile: process.env.NTFY_CONFIG_FILE || '',
-    authFile: process.env.NTFY_AUTH_FILE || '',
-    baseUrl: process.env.NTFY_BASE_URL || '',
     timeoutMs: toInt(process.env.NTFY_TIMEOUT_MS, 15000),
     maxBufferBytes: toInt(process.env.NTFY_MAX_BUFFER_BYTES, 10 * 1024 * 1024),
   },

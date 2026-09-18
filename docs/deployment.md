@@ -146,9 +146,9 @@ sudo chown root:ntfy /etc/ntfy/server.yml
 sudo chmod 640 /etc/ntfy/server.yml
 ```
 
-> The ntfy CLI reads `server.yml` on **every** command (for defaults and, if used,
-> `database-url`) — even when `NTFY_AUTH_FILE` is set. The panel user must
-> therefore also be able to read this file; this is configured in step 4.
+> The ntfy CLI reads `server.yml` on **every** command to locate the auth database
+> (`auth-file`) and other settings. The panel relies on this default file, so the
+> panel user must also be able to read it; this is configured in step 4.
 
 ### 3.4 Create the ntfy systemd service
 
@@ -226,7 +226,8 @@ The panel invokes the `ntfy` CLI, so `ntfy-panel` must be able to:
 - read and write the ntfy auth database and its directory (SQLite also creates
   `-wal`/`-shm` files there);
 - read the ntfy configuration file `/etc/ntfy/server.yml` — the CLI loads it on
-  every command, even when `NTFY_AUTH_FILE` is set.
+  every command to locate the auth database; the panel does not override the
+  config or database path.
 
 The ntfy files are owned by the `ntfy` group, so the simplest way is to add the
 panel user to that group:
@@ -321,7 +322,6 @@ AUTH_PROVIDERS=local
 MAX_TOKENS_PER_USER=4
 
 NTFY_BIN=/usr/bin/ntfy
-NTFY_AUTH_FILE=/var/lib/ntfy/user.db
 ```
 
 Protect the secrets (systemd reads `EnvironmentFile` as root, so this does not
@@ -372,8 +372,8 @@ LDAP_ROLE=user
   the first LDAP login (with a random password and no tokens).
 - Use `LDAP_STARTTLS=true` for StartTLS instead of `ldaps://`; set
   `LDAP_TLS_REJECT_UNAUTHORIZED=false` only for self-signed certificates.
-- The ntfy CLI loads `/etc/ntfy/server.yml` on every command, so the panel user
-  must be able to read it (step 4); `NTFY_AUTH_FILE` does not remove this need.
+- The panel relies on the ntfy CLI reading the default `/etc/ntfy/server.yml`, so
+  the panel user must be able to read it (step 4).
 - If LDAP is enabled but `LDAP_URL`, `LDAP_BIND_DN` or `LDAP_SEARCH_BASE` is
   missing, the provider is skipped and an error is written to the log.
 
@@ -578,7 +578,7 @@ tools.
 |---------|-------------------|
 | `ntfy_bin_not_found` | `ntfy` not found. Specify the full path in `NTFY_BIN`. |
 | `ntfy_auth_file_missing` | The `auth-file` has not been created yet. Start the ntfy server. |
-| `ntfy_auth_unconfigured` | `NTFY_CONFIG_FILE` and `NTFY_AUTH_FILE` are not set. |
+| `ntfy_auth_unconfigured` | The ntfy CLI could not find the auth database. Check that `/etc/ntfy/server.yml` exists, is readable, and defines `auth-file` (or `database-url`). |
 | ntfy fails to start: permission denied on `user.db`/`cache.db` | Check ownership: `sudo chown -R ntfy:ntfy /var/lib/ntfy /var/cache/ntfy`. |
 | `SQLITE_READONLY` / `attempt to write a readonly database` | The panel user cannot write the ntfy DB. Grant access (step 4). |
 | `server.yml: permission denied` | The panel user cannot read the ntfy config. Add it to the `ntfy` group (step 4) or grant an ACL, then restart the panel. |
