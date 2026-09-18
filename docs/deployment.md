@@ -146,6 +146,10 @@ sudo chown root:ntfy /etc/ntfy/server.yml
 sudo chmod 640 /etc/ntfy/server.yml
 ```
 
+> The ntfy CLI reads `server.yml` on **every** command (for defaults and, if used,
+> `database-url`) — even when `NTFY_AUTH_FILE` is set. The panel user must
+> therefore also be able to read this file; this is configured in step 4.
+
 ### 3.4 Create the ntfy systemd service
 
 If you installed ntfy from the apt repository, the unit file is already
@@ -217,17 +221,37 @@ sudo mkdir -p /opt/ntfy-control-panel /var/lib/ntfy-panel
 sudo chown ntfy-panel:ntfy-panel /var/lib/ntfy-panel
 ```
 
-The panel invokes the `ntfy` CLI, so `ntfy-panel` must be able to read and write
-the ntfy auth database and its directory (SQLite also creates `-wal`/`-shm` files
-there). Grant access with ACLs:
+The panel invokes the `ntfy` CLI, so `ntfy-panel` must be able to:
+
+- read and write the ntfy auth database and its directory (SQLite also creates
+  `-wal`/`-shm` files there);
+- read the ntfy configuration file `/etc/ntfy/server.yml` — the CLI loads it on
+  every command, even when `NTFY_AUTH_FILE` is set.
+
+The ntfy files are owned by the `ntfy` group, so the simplest way is to add the
+panel user to that group:
 
 ```bash
+sudo usermod -aG ntfy ntfy-panel
+```
+
+Make sure the data directory and its files are group-writable:
+
+```bash
+sudo chmod 770 /var/lib/ntfy
+sudo chmod -R g+rw /var/lib/ntfy
+```
+
+> Group membership is applied to new processes, so restart the panel after this
+> (step 8).
+
+As an alternative to group membership, grant access with ACLs:
+
+```bash
+sudo setfacl -m u:ntfy-panel:r   /etc/ntfy/server.yml
 sudo setfacl -m u:ntfy-panel:rw  /var/lib/ntfy/user.db
 sudo setfacl -m u:ntfy-panel:rwx /var/lib/ntfy
 ```
-
-> The panel does not need access to `/etc/ntfy/server.yml`: it is configured with
-> the direct path to the database via `NTFY_AUTH_FILE`.
 
 ## 5. Get the application
 
@@ -348,8 +372,8 @@ LDAP_ROLE=user
   the first LDAP login (with a random password and no tokens).
 - Use `LDAP_STARTTLS=true` for StartTLS instead of `ldaps://`; set
   `LDAP_TLS_REJECT_UNAUTHORIZED=false` only for self-signed certificates.
-- The panel does not need access to `/etc/ntfy/server.yml`; it uses
-  `NTFY_AUTH_FILE` directly.
+- The ntfy CLI loads `/etc/ntfy/server.yml` on every command, so the panel user
+  must be able to read it (step 4); `NTFY_AUTH_FILE` does not remove this need.
 - If LDAP is enabled but `LDAP_URL`, `LDAP_BIND_DN` or `LDAP_SEARCH_BASE` is
   missing, the provider is skipped and an error is written to the log.
 
@@ -557,6 +581,7 @@ tools.
 | `ntfy_auth_unconfigured` | `NTFY_CONFIG_FILE` and `NTFY_AUTH_FILE` are not set. |
 | ntfy fails to start: permission denied on `user.db`/`cache.db` | Check ownership: `sudo chown -R ntfy:ntfy /var/lib/ntfy /var/cache/ntfy`. |
 | `SQLITE_READONLY` / `attempt to write a readonly database` | The panel user cannot write the ntfy DB. Grant access (step 4). |
+| `server.yml: permission denied` | The panel user cannot read the ntfy config. Add it to the `ntfy` group (step 4) or grant an ACL, then restart the panel. |
 | All requests from one IP in the rate limit | Enable `TRUST_PROXY=true` behind a proxy. |
 | Session resets on restart | Set a persistent `SESSION_SECRET`. |
 | Cookie is not sent | With `COOKIE_SECURE=true`, HTTPS is required. |

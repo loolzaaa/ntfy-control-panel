@@ -249,6 +249,8 @@ export default {
       'The ntfy auth database (auth-file) was not found. Start the ntfy server at least once.',
     ntfy_auth_unconfigured:
       'No auth-file or database-url is configured for ntfy. Check the panel settings.',
+    ntfy_config_permission:
+      'The panel cannot read the ntfy configuration file (server.yml). Grant the panel user read access to it.',
     ntfy_timeout: 'The ntfy command timed out',
     ntfy_error: 'The ntfy command failed',
     ntfy_token_parse_error: 'Could not determine the created token from the ntfy response',

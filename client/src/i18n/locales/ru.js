@@ -249,6 +249,8 @@ export default {
       'Файл базы ntfy (auth-file) не найден. Запустите сервер ntfy хотя бы один раз.',
     ntfy_auth_unconfigured:
       'Не задан auth-file или database-url для ntfy. Проверьте настройки панели.',
+    ntfy_config_permission:
+      'Панель не может прочитать конфигурационный файл ntfy (server.yml). Выдайте пользователю панели права на чтение.',
     ntfy_timeout: 'Превышено время ожидания выполнения команды ntfy',
     ntfy_error: 'Ошибка выполнения команды ntfy',
     ntfy_token_parse_error: 'Не удалось определить созданный токен из ответа ntfy',

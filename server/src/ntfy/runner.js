@@ -76,6 +76,12 @@ function translateCliError(stderr) {
   if (lower.includes('permission must be one of')) {
     return new AppError('Invalid access rights value', { status: 400, code: 'invalid_permission' });
   }
+  if (lower.includes('permission denied') && (lower.includes('server.yml') || lower.includes('config'))) {
+    return new AppError(
+      'The panel cannot read the ntfy configuration file (server.yml). Grant the panel user read access to it.',
+      { status: 500, code: 'ntfy_config_permission' }
+    );
+  }
 
   return new NtfyError(text || 'ntfy command execution error', {
     status: 502,

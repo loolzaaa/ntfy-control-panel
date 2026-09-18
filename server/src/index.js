@@ -1,6 +1,7 @@
 'use strict';
 
 const crypto = require('node:crypto');
+const fs = require('node:fs');
 const config = require('./config');
 const { initDb, closeDb } = require('./db');
 const users = require('./services/users');
@@ -29,6 +30,20 @@ function ensureBootstrapAdmin() {
   }
 }
 
+function warnIfNtfyConfigUnreadable() {
+  const configPath = config.ntfy.configFile || '/etc/ntfy/server.yml';
+  try {
+    if (fs.existsSync(configPath)) {
+      fs.accessSync(configPath, fs.constants.R_OK);
+    }
+  } catch {
+    console.warn(
+      `WARNING: the panel cannot read the ntfy config file (${configPath}) — ntfy CLI ` +
+        'commands will fail. Add the panel user to the ntfy group or grant read access.'
+    );
+  }
+}
+
 function start() {
   initDb(config.panelDb);
   ensureBootstrapAdmin();
@@ -37,6 +52,8 @@ function start() {
   const server = app.listen(config.port, config.host, () => {
     console.log(`ntfy control panel started: http://${config.host}:${config.port}`);
     console.log(`Active authentication providers: ${config.auth.providers.join(', ')}`);
+
+    warnIfNtfyConfigUnreadable();
 
     if (config.session.secretWasGenerated) {
       console.warn(
