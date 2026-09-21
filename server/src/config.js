@@ -66,6 +66,26 @@ function parseProviderList(value) {
   return providers.length ? providers : ['local'];
 }
 
+function parseApiKeys(value) {
+  if (!value || !String(value).trim()) {
+    return [];
+  }
+  const keys = [];
+  for (const raw of String(value).split(',')) {
+    const item = raw.trim();
+    if (!item) {
+      continue;
+    }
+    const separator = item.indexOf(':');
+    const name = separator === -1 ? 'default' : item.slice(0, separator).trim();
+    const key = (separator === -1 ? item : item.slice(separator + 1)).trim();
+    if (name && key) {
+      keys.push({ name, key });
+    }
+  }
+  return keys;
+}
+
 function resolveSessionSecret() {
   const secret = (process.env.SESSION_SECRET || '').trim();
   if (secret.length >= 16) {
@@ -120,6 +140,9 @@ const config = {
   },
   tokens: {
     maxPerUser: toInt(process.env.MAX_TOKENS_PER_USER, 4),
+  },
+  integration: {
+    apiKeys: parseApiKeys(process.env.INTEGRATION_API_KEYS),
   },
   bootstrap: {
     username: (process.env.BOOTSTRAP_ADMIN_USERNAME || '').trim(),

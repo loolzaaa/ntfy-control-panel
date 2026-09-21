@@ -163,6 +163,20 @@ See [.env.example](.env.example). Key ones:
 | `PANEL_DB` | path to the panel SQLite database |
 | `NTFY_BIN` | path to the ntfy executable |
 | `BOOTSTRAP_ADMIN_USERNAME` / `BOOTSTRAP_ADMIN_PASSWORD` | primary panel administrator (required; password is config-managed) |
+| `INTEGRATION_API_KEYS` | bearer keys for the machine provisioning API (empty = disabled) |
+
+### Integration API
+
+With `INTEGRATION_API_KEYS` set (`name:key` pairs), machine clients can provision
+ntfy users and ACLs over a bearer-token API, bypassing the session/CSRF flow:
+
+- `POST /api/integration/users` — create a user (optional `password`, `role`,
+  `acls`) and return the password once;
+- `PUT /api/integration/users/:username/access` — grant a topic permission;
+- `DELETE /api/integration/users/:username/access?topic=...` — revoke it.
+
+All calls are recorded in the audit log under `api:<name>`. See
+[docs/admin-guide.md](docs/admin-guide.md) (section 12) for examples.
 
 ## Documentation
 

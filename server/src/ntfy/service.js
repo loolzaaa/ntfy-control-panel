@@ -21,14 +21,14 @@ async function getUser(username) {
 }
 
 /**
- * Creates an ntfy user with a generated password.
- * The password is returned once so the administrator can hand it to the user.
- * @param {{username: string, role?: string}} input
+ * Creates an ntfy user. When no password is supplied, one is generated.
+ * The password is returned once so the caller can hand it to the user.
+ * @param {{username: string, role?: string, password?: string}} input
  * @returns {Promise<{username: string, role: string, password: string}>}
  */
 async function createUser(input) {
-  const { username, role = 'user' } = input;
-  const password = generatePassword();
+  const { username, role = 'user', password: providedPassword } = input;
+  const password = providedPassword || generatePassword();
 
   await runNtfy(['user', 'add', `--role=${role}`, username], { password });
 

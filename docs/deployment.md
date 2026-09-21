@@ -321,6 +321,10 @@ AUTH_PROVIDERS=local
 # Maximum number of access tokens per ntfy user (default 4)
 MAX_TOKENS_PER_USER=4
 
+# Integration API for machine clients (optional; disabled when empty).
+# Format: comma-separated "name:key" pairs, e.g. INTEGRATION_API_KEYS=n8n:npk_...
+# INTEGRATION_API_KEYS=
+
 NTFY_BIN=/usr/bin/ntfy
 ```
 
@@ -420,6 +424,34 @@ With a context path, all endpoints move under it:
 
 If the value changes later, rebuild the frontend and restart the service. A request
 to `/` is redirected to the context path.
+
+### Integration API (optional)
+
+To let an external system (for example n8n) create ntfy users and grant topic
+permissions, set `INTEGRATION_API_KEYS` in `.env`:
+
+```dotenv
+INTEGRATION_API_KEYS=n8n:npk_<random>
+```
+
+Generate a key:
+
+```bash
+node -e "console.log('npk_' + require('crypto').randomBytes(32).toString('hex'))"
+```
+
+The value is a comma-separated list of `name:key` pairs; the name is used in the
+audit log. When the variable is empty the integration API is disabled (its routes
+return 404). Changes apply only after a panel restart. Clients authenticate with
+`Authorization: Bearer <key>` and use:
+
+- `POST /api/integration/users`
+- `PUT /api/integration/users/:username/access`
+- `DELETE /api/integration/users/:username/access?topic=...`
+
+See the Administrator Guide (section 12) for request/response examples. The panel
+does not store the public ntfy server address, so keep it in the client
+configuration.
 
 ## 8. Create the panel systemd service
 

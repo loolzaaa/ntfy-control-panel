@@ -9,6 +9,7 @@ const config = require('./config');
 const { getDb } = require('./db');
 const SqliteSessionStore = require('./sessionStore');
 const { requireAuth, requireAdmin } = require('./middleware/auth');
+const { requireApiKey } = require('./middleware/apiKey');
 const { csrfProtection } = require('./middleware/csrf');
 const { errorHandler, apiNotFoundHandler } = require('./middleware/errorHandler');
 const authRoutes = require('./routes/auth');
@@ -16,6 +17,7 @@ const userRoutes = require('./routes/users');
 const auditRoutes = require('./routes/audit');
 const meRoutes = require('./routes/me');
 const panelUserRoutes = require('./routes/panelUsers');
+const integrationRoutes = require('./routes/integration');
 
 function createApp() {
   const app = express();
@@ -83,6 +85,10 @@ function createApp() {
   appRouter.use('/api/users', requireAuth, requireAdmin, csrfProtection, userRoutes);
   appRouter.use('/api/admins', requireAuth, requireAdmin, csrfProtection, panelUserRoutes);
   appRouter.use('/api/audit', requireAuth, requireAdmin, csrfProtection, auditRoutes);
+
+  if (config.integration.apiKeys.length) {
+    appRouter.use('/api/integration', requireApiKey, integrationRoutes);
+  }
 
   appRouter.use(apiNotFoundHandler);
 

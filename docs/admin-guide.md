@@ -253,3 +253,55 @@ On the first successful LDAP login, the ntfy user can be created automatically
 LDAP users can change their **ntfy** password on the "My tokens" page (used by
 ntfy clients that do not support tokens). Their **LDAP** password is managed by
 the directory and cannot be changed in the panel.
+
+## 12. Integration API (automation)
+
+For machine clients (for example n8n) the panel can expose a small bearer-token
+API that provisions ntfy users and their topic permissions. It is disabled unless
+`INTEGRATION_API_KEYS` is set in the panel `.env`:
+
+```dotenv
+INTEGRATION_API_KEYS=n8n:npk_<random>
+```
+
+Generate a key:
+
+```bash
+node -e "console.log('npk_' + require('crypto').randomBytes(32).toString('hex'))"
+```
+
+Endpoints (header `Authorization: Bearer <key>`):
+
+- `POST /api/integration/users` — body:
+
+  ```json
+  {
+    "username": "alice",
+    "role": "user",
+    "password": "optional-custom-password",
+    "acls": [{ "topic": "alerts-*", "permission": "read-write" }]
+  }
+  ```
+
+  If `password` is omitted, the panel generates one. The response contains the
+  username and the password (shown once):
+
+  ```json
+  { "user": { "name": "alice", "role": "user" }, "password": "...", "acls": [] }
+  ```
+
+- `PUT /api/integration/users/:username/access` — body
+  `{ "topic": "...", "permission": "read-only" }`.
+- `DELETE /api/integration/users/:username/access?topic=...`.
+
+Permission values: `read-only`, `write-only`, `read-write`, `deny`. The topic may
+contain `*`.
+
+Notes:
+
+- The API key is a secret: keep it only in the panel `.env` and in the client.
+  All calls are written to the audit log under `api:<name>`.
+- Changes to `INTEGRATION_API_KEYS` take effect only after a panel restart;
+  replacing a key invalidates the old one immediately after the restart.
+- The panel does not store or return the public ntfy server address — keep it in
+  the client configuration.

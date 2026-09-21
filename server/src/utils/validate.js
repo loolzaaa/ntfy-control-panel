@@ -85,6 +85,13 @@ const accessSchema = z.object({
   permission: z.enum(PERMISSIONS, { message: 'Invalid permissions value' }),
 });
 
+const provisionUserSchema = z.object({
+  username: usernameSchema,
+  role: z.enum(ROLES).default('user'),
+  password: passwordField.optional().or(z.literal('')),
+  acls: z.array(accessSchema).max(50).optional().default([]),
+});
+
 const auditQuerySchema = z.object({
   from: z.string().trim().max(32).optional(),
   to: z.string().trim().max(32).optional(),
@@ -132,6 +139,7 @@ module.exports = {
   panelPasswordSchema,
   addTokenSchema,
   accessSchema,
+  provisionUserSchema,
   auditQuerySchema,
   changePasswordSchema,
   validate,
