@@ -25,9 +25,9 @@ or typecheck.
 - `server/src/` — `config.js`, `db.js`, `app.js`, `index.js`
   - `ntfy/` — CLI runner, output parsers, high-level service
   - `auth/` — IdentityProvider interface, `providers/{local,ldap}.js`, `authenticate.js`
-  - `routes/` — `auth.js`, `me.js`, `users.js`, `panelUsers.js`, `audit.js`
+  - `routes/` — `auth.js`, `me.js`, `users.js`, `panelUsers.js`, `audit.js`, `integration.js`
   - `bootstrap.js` — primary panel administrator creation/sync from config
-  - `middleware/` — auth/roles, CSRF, error handler
+  - `middleware/` — auth/roles, CSRF, API key, error handler
   - `services/` — panel users, audit, token policy
 - `client/src/` — `views/`, `components/`, `stores/`, `router/`, `i18n/`, `api/`
 - `server/test/` — `node:test` suites
@@ -74,6 +74,22 @@ or typecheck.
   initial connection and plain LDAP fails with ECONNRESET. StartTLS is done via
   `client.startTLS({ rejectUnauthorized })`.
 
+### Integration API (machine clients)
+- `INTEGRATION_API_KEYS` (comma-separated `name:key` pairs) enables a bearer-token
+  API for external automation (e.g. n8n): `POST /api/integration/users` (create an
+  ntfy user, optional custom `password`, optional `role` and `acls`) plus
+  `PUT`/`DELETE /api/integration/users/:username/access`. When the variable is
+  empty the router is not mounted (routes 404).
+- Mounted in `app.js` as `requireApiKey + integrationRoutes` — deliberately WITHOUT
+  `requireAuth`/`requireAdmin`/`csrfProtection` (bearer auth, no session cookie;
+  CSRF does not apply). Keep it isolated from `/api/users` to limit blast radius.
+- Keys live only in the process env and are read once at startup (`config.js`), so
+  rotating a key requires a panel restart. `requireApiKey` compares with
+  `crypto.timingSafeEqual` and sets `req.integration = { name }`.
+- Audit entries use `adminUsername = 'api:<name>'`, `adminId = null`,
+  `details.integration = true`. Never log the key or password values.
+- The panel never stores/returns the public ntfy server address; clients keep it.
+
 ### Tokens / access
 - `MAX_TOKENS_PER_USER` (default 4) is enforced in `services/tokenPolicy.js` for
   both the admin API and self-service.
@@ -88,8 +104,10 @@ or typecheck.
   support tokens (e.g. the iOS app).
 - Create/reset/change all go through the CLI with the password in `NTFY_PASSWORD`
   (`runNtfy(args, { password })`): `user add` / `user change-pass`.
-- `createUser({username, role})` returns `{username, role, password}` and does NOT
-  create tokens (token binding at creation was removed). Admin password endpoints:
+- `createUser({username, role, password?})` returns `{username, role, password}`;
+  when `password` is omitted it is generated (the integration API passes a custom
+  one through). Does NOT create tokens (token binding at creation was removed).
+  Admin password endpoints:
   `PUT /api/users/:username/password` (empty body → generate, `{password}` →
   custom). Self-service: `PUT /api/me/password`, **LDAP only**
   (`ntfy_password_not_applicable` otherwise; `ntfy_user_not_found` if the user has
