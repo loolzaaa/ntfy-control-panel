@@ -53,10 +53,20 @@ test.after(() => {
 
 test('integration API is not mounted when no keys are configured', async () => {
   assert.deepEqual(config.integration.apiKeys, []);
-  const res = await fetch(`${baseUrl}/api/integration/users`, {
+
+  const headers = { 'content-type': 'application/json', authorization: 'Bearer anything' };
+
+  const created = await fetch(`${baseUrl}/api/integration/users`, {
     method: 'POST',
-    headers: { 'content-type': 'application/json', authorization: 'Bearer anything' },
+    headers,
     body: JSON.stringify({ username: 'alice' }),
   });
-  assert.equal(res.status, 404);
+  assert.equal(created.status, 404);
+
+  const upserted = await fetch(`${baseUrl}/api/integration/users/alice`, {
+    method: 'PUT',
+    headers,
+    body: JSON.stringify({}),
+  });
+  assert.equal(upserted.status, 404);
 });

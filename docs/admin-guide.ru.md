@@ -288,12 +288,28 @@ node -e "console.log('npk_' + require('crypto').randomBytes(32).toString('hex'))
   { "user": { "name": "alice", "role": "user" }, "password": "...", "acls": [] }
   ```
 
+- `PUT /api/integration/users/:username` — идемпотентное создание-или-обновление.
+  Тело такое же, как выше, но без `username` (имя в пути). Если пользователя
+  нет — он создаётся; если есть — пароль **всегда** сбрасывается (на `password`
+  или сгенерированный) и переприменяются указанные ACL. Существующие токены и
+  ACL, не указанные в запросе, сохраняются. `role` применяется только при
+  создании. Ответ:
+
+  ```json
+  { "user": { "name": "alice", "role": "user" }, "password": "...", "acls": [], "created": false }
+  ```
+
 - `PUT /api/integration/users/:username/access` — тело
   `{ "topic": "...", "permission": "read-only" }`.
 - `DELETE /api/integration/users/:username/access?topic=...`.
 
 Значения прав: `read-only`, `write-only`, `read-write`, `deny`. В топике
 допустим `*`.
+
+Используйте `PUT /api/integration/users/:username` в автоматизации, которую
+нужно безопасно перезапускать (например, повторная выдача учётных данных
+сотруднику): он никогда не падает с «пользователь уже существует» и всегда
+возвращает актуальный пароль.
 
 Примечания:
 

@@ -26,6 +26,24 @@ async function getUser(username) {
  * @param {{username: string, role?: string, password?: string}} input
  * @returns {Promise<{username: string, role: string, password: string}>}
  */
+/**
+ * Returns true when an ntfy user exists. Tolerates both the CLI-level
+ * "user_not_found" and the service-level "not_found" error codes.
+ * @param {string} username
+ * @returns {Promise<boolean>}
+ */
+async function userExists(username) {
+  try {
+    await getUser(username);
+    return true;
+  } catch (error) {
+    if (error.code === 'user_not_found' || error.code === 'not_found') {
+      return false;
+    }
+    throw error;
+  }
+}
+
 async function createUser(input) {
   const { username, role = 'user', password: providedPassword } = input;
   const password = providedPassword || generatePassword();
@@ -129,6 +147,7 @@ module.exports = {
   generatePassword,
   listUsers,
   getUser,
+  userExists,
   createUser,
   deleteUser,
   changePassword,

@@ -290,12 +290,27 @@ Endpoints (header `Authorization: Bearer <key>`):
   { "user": { "name": "alice", "role": "user" }, "password": "...", "acls": [] }
   ```
 
+- `PUT /api/integration/users/:username` — idempotent create-or-update. The body
+  is the same as above without `username` (the name is in the path). If the user
+  does not exist it is created; if it exists, the password is **always** reset
+  (to `password` or a freshly generated one) and the given ACLs are re-applied.
+  Existing tokens and ACLs not listed in the request are preserved. The `role` is
+  applied only on creation. Response:
+
+  ```json
+  { "user": { "name": "alice", "role": "user" }, "password": "...", "acls": [], "created": false }
+  ```
+
 - `PUT /api/integration/users/:username/access` — body
   `{ "topic": "...", "permission": "read-only" }`.
 - `DELETE /api/integration/users/:username/access?topic=...`.
 
 Permission values: `read-only`, `write-only`, `read-write`, `deny`. The topic may
 contain `*`.
+
+Use `PUT /api/integration/users/:username` in automation that must be safe to
+re-run (for example, re-issuing credentials to an employee): it never fails with
+"user already exists" and always returns a current password.
 
 Notes:
 

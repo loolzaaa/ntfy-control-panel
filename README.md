@@ -172,6 +172,9 @@ ntfy users and ACLs over a bearer-token API, bypassing the session/CSRF flow:
 
 - `POST /api/integration/users` — create a user (optional `password`, `role`,
   `acls`) and return the password once;
+- `PUT /api/integration/users/:username` — idempotent create-or-update: always
+  returns a fresh password, re-applies the given ACLs, and keeps existing tokens
+  and other ACLs;
 - `PUT /api/integration/users/:username/access` — grant a topic permission;
 - `DELETE /api/integration/users/:username/access?topic=...` — revoke it.
 

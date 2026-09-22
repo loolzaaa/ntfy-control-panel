@@ -92,6 +92,12 @@ const provisionUserSchema = z.object({
   acls: z.array(accessSchema).max(50).optional().default([]),
 });
 
+const upsertUserSchema = z.object({
+  role: z.enum(ROLES).default('user'),
+  password: passwordField.optional().or(z.literal('')),
+  acls: z.array(accessSchema).max(50).optional().default([]),
+});
+
 const auditQuerySchema = z.object({
   from: z.string().trim().max(32).optional(),
   to: z.string().trim().max(32).optional(),
@@ -140,6 +146,7 @@ module.exports = {
   addTokenSchema,
   accessSchema,
   provisionUserSchema,
+  upsertUserSchema,
   auditQuerySchema,
   changePasswordSchema,
   validate,

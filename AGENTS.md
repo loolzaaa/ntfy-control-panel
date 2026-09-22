@@ -77,7 +77,10 @@ or typecheck.
 ### Integration API (machine clients)
 - `INTEGRATION_API_KEYS` (comma-separated `name:key` pairs) enables a bearer-token
   API for external automation (e.g. n8n): `POST /api/integration/users` (create an
-  ntfy user, optional custom `password`, optional `role` and `acls`) plus
+  ntfy user, optional custom `password`, optional `role` and `acls`),
+  `PUT /api/integration/users/:username` (idempotent create-or-update: always
+  rotates the password, re-applies the given ACLs, keeps existing tokens and other
+  ACLs, role only applied on creation) plus
   `PUT`/`DELETE /api/integration/users/:username/access`. When the variable is
   empty the router is not mounted (routes 404).
 - Mounted in `app.js` as `requireApiKey + integrationRoutes` — deliberately WITHOUT

@@ -446,6 +446,7 @@ return 404). Changes apply only after a panel restart. Clients authenticate with
 `Authorization: Bearer <key>` and use:
 
 - `POST /api/integration/users`
+- `PUT /api/integration/users/:username` (idempotent create-or-update)
 - `PUT /api/integration/users/:username/access`
 - `DELETE /api/integration/users/:username/access?topic=...`
 

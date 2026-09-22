@@ -22,7 +22,27 @@ const childProcess = require('node:child_process');
 const state = {
   users: new Map(),
   grants: new Map(),
+  tokens: new Map(),
 };
+
+const PHRASE = { 'read-write': 'read-write', 'read-only': 'read-only', 'write-only': 'write-only', deny: 'no' };
+
+function renderUser(name) {
+  const user = state.users.get(name);
+  if (!user) {
+    return '';
+  }
+  const lines = [`user ${name} (role: ${user.role}, tier: none)`];
+  const grants = state.grants.get(name) || [];
+  if (grants.length === 0) {
+    lines.push('- no topic-specific permissions');
+  } else {
+    for (const grant of grants) {
+      lines.push(`- ${PHRASE[grant.permission]} access to topic ${grant.topic}`);
+    }
+  }
+  return `${lines.join('\n')}\n`;
+}
 
 function handle(args, options = {}) {
   const cmd = args[0];
@@ -37,6 +57,15 @@ function handle(args, options = {}) {
     }
     state.users.set(name, { name, role, password: env.NTFY_PASSWORD });
     return `user ${name} added with role ${role}\n`;
+  }
+
+  if (cmd === 'user' && args[1] === 'change-pass') {
+    const name = args[args.length - 1];
+    if (!state.users.has(name)) {
+      return { error: `user ${name} does not exist` };
+    }
+    state.users.get(name).password = env.NTFY_PASSWORD;
+    return `changed password for user ${name}\n`;
   }
 
   if (cmd === 'access') {
@@ -59,7 +88,7 @@ function handle(args, options = {}) {
       return { error: `user ${name} does not exist` };
     }
     if (!topic) {
-      return '';
+      return renderUser(name);
     }
     const grants = state.grants.get(name) || [];
     const existing = grants.find((grant) => grant.topic === topic);
@@ -247,6 +276,62 @@ test('ACLs can be granted and revoked', async () => {
   );
   assert.equal(revoke.status, 200);
   assert.deepEqual(state.grants.get('alice'), []);
+});
+
+test('upsert creates a user when missing', async () => {
+  const res = await request(
+    'PUT',
+    '/api/integration/users/dave',
+    {
+      role: 'user',
+      password: 'initial-pass-123',
+      acls: [{ topic: 'keep', permission: 'read-only' }],
+    },
+    bearer()
+  );
+  assert.equal(res.status, 200);
+  assert.equal(res.data.created, true);
+  assert.equal(res.data.user.name, 'dave');
+  assert.equal(res.data.user.role, 'user');
+  assert.equal(res.data.password, 'initial-pass-123');
+  assert.equal(state.users.get('dave').password, 'initial-pass-123');
+  assert.deepEqual(state.grants.get('dave'), [{ topic: 'keep', permission: 'read-only' }]);
+});
+
+test('upsert on an existing user rotates the password, keeps tokens and other ACLs', async () => {
+  state.tokens.set('dave', [{ value: 'tk_keep_me', label: 'phone' }]);
+
+  const res = await request(
+    'PUT',
+    '/api/integration/users/dave',
+    {
+      role: 'admin',
+      acls: [{ topic: 'alerts-*', permission: 'read-write' }],
+    },
+    bearer()
+  );
+
+  assert.equal(res.status, 200);
+  assert.equal(res.data.created, false);
+  assert.match(res.data.password, /^[A-HJ-NP-Za-km-z2-9]{20}$/);
+  assert.notEqual(res.data.password, 'initial-pass-123');
+  assert.equal(state.users.get('dave').password, res.data.password);
+
+  // The role is only applied at creation and is not changed on update.
+  assert.equal(res.data.user.role, 'user');
+
+  // Tokens are preserved.
+  assert.deepEqual(state.tokens.get('dave'), [{ value: 'tk_keep_me', label: 'phone' }]);
+
+  // ACLs are additive: the previous grant survives, the new one is added.
+  const topics = state.grants.get('dave').map((grant) => grant.topic).sort();
+  assert.deepEqual(topics, ['alerts-*', 'keep']);
+});
+
+test('upsert for the anonymous "*" user is rejected', async () => {
+  const res = await request('PUT', '/api/integration/users/*', {}, bearer());
+  assert.equal(res.status, 403);
+  assert.equal(res.data.error.code, 'forbidden');
 });
 
 test('integration actions are written to the audit log', async () => {

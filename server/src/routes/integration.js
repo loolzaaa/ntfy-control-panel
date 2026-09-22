@@ -3,7 +3,13 @@
 const express = require('express');
 const ntfy = require('../ntfy/service');
 const audit = require('../services/audit');
-const { validate, provisionUserSchema, accessSchema, topicPatternSchema } = require('../utils/validate');
+const {
+  validate,
+  provisionUserSchema,
+  upsertUserSchema,
+  accessSchema,
+  topicPatternSchema,
+} = require('../utils/validate');
 const { badRequest, forbidden } = require('../errors');
 
 const router = express.Router();
@@ -16,6 +22,19 @@ function assertManageable(username) {
 
 function integrationName(req) {
   return `api:${req.integration.name}`;
+}
+
+async function applyAcls(req, username, acls) {
+  for (const acl of acls) {
+    await ntfy.setAccess(username, acl.topic, acl.permission);
+    audit.log({
+      adminId: null,
+      adminUsername: integrationName(req),
+      action: 'access.set',
+      targetUser: username,
+      details: { integration: true, topic: acl.topic, permission: acl.permission },
+    });
+  }
 }
 
 router.post('/users', async (req, res) => {
@@ -40,21 +59,66 @@ router.post('/users', async (req, res) => {
     },
   });
 
-  for (const acl of data.acls) {
-    await ntfy.setAccess(data.username, acl.topic, acl.permission);
-    audit.log({
-      adminId: null,
-      adminUsername: integrationName(req),
-      action: 'access.set',
-      targetUser: data.username,
-      details: { integration: true, topic: acl.topic, permission: acl.permission },
-    });
-  }
+  await applyAcls(req, data.username, data.acls);
 
   res.status(201).json({
     user: { name: result.username, role: result.role },
     password: result.password,
     acls: data.acls,
+    created: true,
+  });
+});
+
+router.put('/users/:username', async (req, res) => {
+  const { username } = req.params;
+  assertManageable(username);
+
+  const data = validate(upsertUserSchema, req.body);
+  const exists = await ntfy.userExists(username);
+
+  let password;
+  let created = false;
+
+  if (!exists) {
+    const result = await ntfy.createUser({
+      username,
+      role: data.role,
+      password: data.password || undefined,
+    });
+    password = result.password;
+    created = true;
+
+    audit.log({
+      adminId: null,
+      adminUsername: integrationName(req),
+      action: 'user.create',
+      targetUser: username,
+      details: {
+        integration: true,
+        role: data.role,
+        passwordGenerated: !data.password,
+      },
+    });
+  } else {
+    password = data.password || (await ntfy.resetPassword(username));
+
+    audit.log({
+      adminId: null,
+      adminUsername: integrationName(req),
+      action: 'user.password_change',
+      targetUser: username,
+      details: { integration: true, generated: !data.password },
+    });
+  }
+
+  await applyAcls(req, username, data.acls);
+
+  const user = await ntfy.getUser(username);
+  res.json({
+    user: { name: username, role: user.role },
+    password,
+    acls: data.acls,
+    created,
   });
 });
 
